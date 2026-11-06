@@ -61,10 +61,17 @@ def health():
 def status():
     from .agent.llm import LLMClient
     client = LLMClient()
+    if client.api_key:
+        model, base = client.model, client.base_url
+    elif config.FREE_LLM_ENABLED:
+        model, base = config.FREE_LLM_MODEL, config.FREE_LLM_BASE_URL
+    else:
+        model, base = None, None
     return {
         "llm_available": client.available,
-        "llm_model": client.model if client.available else None,
-        "llm_base_url": client.base_url if client.available else None,
+        "llm_mode": client.mode,
+        "llm_model": model,
+        "llm_base_url": base,
         "kicad_cli": config.KICAD_CLI or "未探测（本机可能未安装 KiCad，不影响生成原理图文件）",
     }
 

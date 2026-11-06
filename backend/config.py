@@ -35,10 +35,20 @@ LLM_BASE_URL = os.environ.get("EDA_AGENT_BASE_URL", "") or os.environ.get("OPENA
 LLM_MODEL = os.environ.get("EDA_AGENT_MODEL", "") or os.environ.get("OPENAI_MODEL", "deepseek-chat")
 LLM_TIMEOUT = float(os.environ.get("EDA_AGENT_TIMEOUT", "60"))
 
+# ---------------------------------------------------------------------------
+# 免费在线 LLM（无需 API key）
+# BlockRun 托管开源模型（NVIDIA 免费推理），OpenAI 兼容，无需注册/无需 key。
+# 每个用户开箱即用；不稳定的网络环境下会自动降级到离线模板。
+# 设 EDA_AGENT_NO_FREE_LLM=1 可关闭（例如内网无法访问海外服务时）。
+# ---------------------------------------------------------------------------
+FREE_LLM_BASE_URL = os.environ.get("EDA_AGENT_FREE_LLM_BASE_URL", "https://blockrun.ai/api/v1")
+FREE_LLM_MODEL = os.environ.get("EDA_AGENT_FREE_LLM_MODEL", "nvidia/gpt-oss-120b")
+FREE_LLM_ENABLED = os.environ.get("EDA_AGENT_NO_FREE_LLM", "") != "1"
+
 # KiCad 可执行文件（留空则自动探测，未安装时跳过 ERC/DRC）
 KICAD_CLI = os.environ.get("KICAD_CLI", "")
 
 
 def has_llm() -> bool:
-    """是否配置了可用的 LLM 密钥"""
-    return bool(LLM_API_KEY)
+    """是否可用真实 LLM（自定义 key 或免费在线 LLM）"""
+    return bool(LLM_API_KEY) or FREE_LLM_ENABLED

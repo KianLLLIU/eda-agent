@@ -76,7 +76,7 @@ def generate_design_json(requirement: str, use_llm: bool = None):
                 json_mode=True,
             )
             design = extract_json(content)
-            return validate_design(design), "llm"
+            return validate_design(design), f"llm:{client.mode}"
         except (LLMError, DesignError) as e:
             # LLM 失败时降级到模板模式，保证可用性
             tpl = _match_template(requirement)

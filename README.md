@@ -69,10 +69,13 @@ python run.py
 #    http://127.0.0.1:8000
 ```
 
-### 配置 LLM（可选，推荐）
+### 配置 LLM（可选）
+
+**默认开箱即用**：不配置任何密钥时，系统自动使用**免费在线 LLM**（BlockRun 托管的开源模型，
+无需注册、无需 key，每个用户都能直接用真实大模型生成电路）。
 
 ```bash
-# Windows PowerShell
+# Windows PowerShell（可选：改用你自己的 LLM，覆盖免费默认）
 $env:EDA_AGENT_API_KEY="你的密钥"
 $env:EDA_AGENT_BASE_URL="https://api.deepseek.com/v1"
 $env:EDA_AGENT_MODEL="deepseek-chat"
@@ -83,7 +86,12 @@ export EDA_AGENT_BASE_URL="https://api.deepseek.com/v1"
 export EDA_AGENT_MODEL="deepseek-chat"
 ```
 
-不配置任何密钥也能跑：系统会按关键词自动匹配内置模板（Arduino 最小系统、LED 指示灯、5V→3.3V 稳压）。
+三级能力（自动降级，保证任何环境下都能跑通）：
+1. **自定义 LLM**：配置了 API Key（DeepSeek / OpenAI / 通义 / Ollama 等任意 OpenAI 兼容服务）
+2. **免费在线 LLM**：无 key 时用 BlockRun 免费开源模型（默认，需能访问外网）
+3. **离线模板**：免费 LLM 也不可用（如内网）时，按关键词匹配内置模板
+
+> 关闭免费 LLM：设 `EDA_AGENT_NO_FREE_LLM=1`（例如内网无法访问海外服务时，直接走离线模板）。
 
 ## 📂 项目结构
 

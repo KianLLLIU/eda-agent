@@ -105,8 +105,9 @@
       .then(function (r) { return r.json(); })
       .then(function (s) {
         var c = $('#chipLlm');
-        if (s.llm_available) { c.classList.add('ok'); c.innerHTML = '<i class="dot"></i>LLM · ' + esc(s.llm_model); }
-        else { c.classList.add('warn'); c.innerHTML = '<i class="dot"></i>LLM 未配置（用离线模板）'; }
+        if (s.llm_mode === 'custom') { c.classList.add('ok'); c.innerHTML = '<i class="dot"></i>LLM · ' + esc(s.llm_model); }
+        else if (s.llm_mode === 'free') { c.classList.add('ok'); c.innerHTML = '<i class="dot"></i>免费在线 LLM · ' + esc(s.llm_model); }
+        else { c.classList.add('warn'); c.innerHTML = '<i class="dot"></i>LLM 不可用（用离线模板）'; }
         $('#chipKicad').classList.add('ok');
         $('#chipKicad').innerHTML = '<i class="dot"></i>KiCad 导出就绪';
       })
@@ -169,7 +170,10 @@
   function renderResults(data) {
     var title = (data.design && data.design.title) || '设计结果';
     $('#resultTitle').textContent = title;
-    var modeText = data.mode && data.mode.indexOf('llm') >= 0 ? 'LLM 生成' : '离线模板生成';
+    var modeText;
+    if (data.mode && data.mode.indexOf('llm:free') >= 0) modeText = '免费在线 LLM 生成';
+    else if (data.mode && data.mode.indexOf('llm:custom') >= 0) modeText = 'LLM 生成';
+    else modeText = '离线模板生成';
     $('#resultMeta').textContent = modeText + ' · ' + (data.design.components || []).length + ' 个元件 · ' + (data.design.nets || []).length + ' 条网络';
 
     $('#panel-bom').innerHTML = '<div class="md">' + renderMd(data.bom_md) + '</div>';
