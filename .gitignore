@@ -35,3 +35,8 @@ Thumbs.db
 # 密钥（绝不提交）
 .env
 *.key
+
+# 临时脚本
+_gh_*.py
+_get_creds.py
+_*.txt
