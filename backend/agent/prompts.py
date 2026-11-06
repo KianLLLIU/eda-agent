@@ -45,7 +45,7 @@ SYSTEM_PROMPT = """你是一名资深硬件电路设计工程师，擅长把用�
 """
 
 
-def build_user_prompt(requirement: str) -> str:
+def build_user_prompt(requirement: str, difficulty: str = "intermediate") -> str:
     catalog = _symbol_catalog()
     schema = {
         "title": "电路名称",
@@ -61,6 +61,13 @@ def build_user_prompt(requirement: str) -> str:
     }
     example = json.dumps(schema, ensure_ascii=False, indent=2)
 
+    # 难度约束
+    difficulty_hint = {
+        "beginner": "这是一个【入门级】电路：元件数量控制在 3~6 个，只保留核心功能，结构尽量简单清晰。",
+        "intermediate": "这是一个【进阶】电路：可包含主控、电源、晶振、去耦、接口等模块，元件 8~16 个，功能完整。",
+        "advanced": "这是一个【挑战级】电路：尽量做成完整系统，覆盖电源、主控、信号处理、接口等多个模块，元件可以更多、更周全。",
+    }.get(difficulty, "")
+
     return f"""可用符号表（只能使用这些符号，引脚号必须匹配）：
 {catalog}
 
@@ -72,6 +79,9 @@ def build_user_prompt(requirement: str) -> str:
 - components：每个元件含 ref（唯一编号）、lib（符号库）、symbol（符号名）、
   value（参数值）、footprint（封装，格式"库:封装名"）；
 - nets：网络列表，每个网络 name 唯一，connections 为该网络连接的所有引脚。
+
+复杂度要求：
+{difficulty_hint}
 
 用户需求：
 {requirement}

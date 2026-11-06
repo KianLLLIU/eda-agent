@@ -5,25 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>EDA Agent · AI 电路设计智能体</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
-  <!-- 背景光晕 -->
-  <div class="bg-glow" aria-hidden="true">
-    <div class="orb orb-a"></div>
-    <div class="orb orb-b"></div>
-    <div class="orb orb-c"></div>
-  </div>
-
   <!-- 顶栏 -->
   <header class="topbar">
     <div class="brand">
-      <div class="logo">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 4h16v16H4z" opacity="0.35"/>
-          <path d="M7 8h10M7 12h6M7 16h8"/>
-          <circle cx="16" cy="16" r="1.4" fill="currentColor" stroke="none"/>
-          <circle cx="16" cy="8" r="1.4" fill="currentColor" stroke="none"/>
+      <div class="logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="3" />
+          <path d="M7 9h4M7 13h2M7 17h5" />
+          <circle cx="16" cy="10" r="1.3" fill="currentColor" stroke="none" />
+          <circle cx="16" cy="16" r="1.3" fill="currentColor" stroke="none" />
         </svg>
       </div>
       <div class="brand-text">
@@ -31,89 +26,158 @@
         <span class="brand-sub">AI 电路设计智能体</span>
       </div>
     </div>
-    <div class="status-bar" id="statusBar">
-      <span class="chip" id="chipLlm"><i class="dot"></i>LLM 检测中…</span>
-      <span class="chip" id="chipKicad"><i class="dot"></i>KiCad</span>
+    <div class="status-bar">
+      <span class="chip" id="chipLlm"><span class="dot"></span><span class="chip-txt">检测中…</span></span>
+      <span class="chip ok" id="chipKicad"><span class="dot"></span><span class="chip-txt">KiCad 导出就绪</span></span>
     </div>
   </header>
 
-  <main class="wrap">
-    <!-- Hero -->
-    <section class="hero">
-      <h1 class="hero-title">说一句人话，<span class="grad">换一块电路板</span></h1>
-      <p class="hero-sub">输入你的功能需求，AI 智能体自动完成 <b>元器件选型 → 网表连接 → KiCad 原理图</b>，并生成工作汇报、操作指南与硬件需求清单。</p>
-    </section>
+  <main class="layout">
+    <!-- 左栏：配置 + 聊天助手 -->
+    <aside class="panel-left">
+      <!-- 难度选择 -->
+      <section class="card config-card">
+        <div class="card-head">
+          <h2 class="card-title">电路难度</h2>
+        </div>
+        <div class="seg-group" id="difficultyGroup">
+          <button class="seg" data-difficulty="beginner">
+            <span class="seg-label">入门</span>
+            <span class="seg-desc">简单电路 · 3~6 元件</span>
+          </button>
+          <button class="seg active" data-difficulty="intermediate">
+            <span class="seg-label">进阶</span>
+            <span class="seg-desc">完整功能 · 8~16 元件</span>
+          </button>
+          <button class="seg" data-difficulty="advanced">
+            <span class="seg-label">挑战</span>
+            <span class="seg-desc">完整系统 · 多模块</span>
+          </button>
+        </div>
+      </section>
 
-    <!-- 输入区 -->
-    <section class="card input-card">
-      <label class="input-label" for="requirement">描述你想实现的电路</label>
-      <textarea id="requirement" class="input-box" rows="4"
-        placeholder="例如：帮我设计一块 Arduino 最小系统板，带一个 LED 闪烁指示……"></textarea>
+      <!-- 风格选择 -->
+      <section class="card config-card">
+        <div class="card-head">
+          <h2 class="card-title">电路板风格</h2>
+        </div>
+        <div class="style-group" id="styleGroup">
+          <button class="style-opt active" data-style="classic">
+            <span class="swatch" style="--c:#0E7A46"></span>
+            <span class="style-name">经典绿</span>
+          </button>
+          <button class="style-opt" data-style="minimal">
+            <span class="swatch" style="--c:#3B3B3B"></span>
+            <span class="style-name">现代极简</span>
+          </button>
+          <button class="style-opt" data-style="retro">
+            <span class="swatch" style="--c:#C0843C"></span>
+            <span class="style-name">复古暖铜</span>
+          </button>
+        </div>
+      </section>
 
-      <div class="chips" id="chips">
-        <span class="chip-example" data-tpl="帮我设计一块 Arduino 最小系统板，带 16MHz 晶振和 LED 闪烁指示">Arduino 最小系统</span>
-        <span class="chip-example" data-tpl="设计一个 LED 指示灯电路，3.3V 供电，绿色 LED">LED 指示灯</span>
-        <span class="chip-example" data-tpl="设计一个 5V 转 3.3V 的 LDO 稳压电路，带输入输出滤波电容">5V→3.3V 稳压</span>
+      <!-- 聊天助手 -->
+      <section class="card chat-card">
+        <div class="card-head">
+          <h2 class="card-title">智能助手</h2>
+          <span class="card-hint">对话式设计</span>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+          <div class="msg assistant">
+            <div class="avatar">W</div>
+            <div class="bubble">
+              你好，我是你的电路设计助手。描述你想实现的电路，我会提取关键词并生成原理图；生成后你还可以直接说「把电容换成 100nF」这类修改。
+            </div>
+          </div>
+        </div>
+        <div class="keyword-chips" id="keywordChips"></div>
+        <div class="chat-input">
+          <input type="text" id="chatInput" placeholder="描述电路需求，或输入修改指令…" autocomplete="off" />
+          <button class="send-btn" id="sendBtn" aria-label="发送">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+        <div class="chat-actions">
+          <span class="hint-text" id="hintText">输入需求后回车发送</span>
+        </div>
+      </section>
+    </aside>
+
+    <!-- 右栏：实时构图 + 结果 -->
+    <section class="panel-right">
+      <!-- 进度步骤 -->
+      <div class="pipeline" id="pipeline">
+        <div class="step" data-step="1"><span class="step-dot"></span><span class="step-name">需求解析</span></div>
+        <div class="step" data-step="2"><span class="step-dot"></span><span class="step-name">选型 BOM</span></div>
+        <div class="step" data-step="3"><span class="step-dot"></span><span class="step-name">网表连接</span></div>
+        <div class="step" data-step="4"><span class="step-dot"></span><span class="step-name">KiCad 生成</span></div>
+        <div class="step" data-step="5"><span class="step-dot"></span><span class="step-name">报告产出</span></div>
       </div>
 
-      <div class="actions">
-        <div class="mode-toggle">
-          <span class="mode-label">生成模式</span>
-          <button class="seg active" id="modeAuto">自动</button>
-          <button class="seg" id="modeLlm">强制 LLM</button>
-          <button class="seg" id="modeTpl">离线模板</button>
+      <!-- 实时构图舞台 -->
+      <div class="schematic-stage" id="schematicStage">
+        <div class="stage-empty" id="stageEmpty">
+          <div class="empty-graphic" aria-hidden="true">
+            <svg viewBox="0 0 120 90" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="10" y="20" width="46" height="30" rx="3"/>
+              <rect x="30" y="14" width="12" height="10" rx="2"/>
+              <rect x="70" y="30" width="40" height="20" rx="3"/>
+              <circle cx="90" cy="55" r="5"/>
+              <path d="M10 35h46M10 45h46M70 40h40"/>
+              <path d="M56 35h14M56 45h14"/>
+            </svg>
+          </div>
+          <p class="empty-title">等待生成电路</p>
+          <p class="empty-sub">在左侧描述需求，这里会实时展示电路构图过程</p>
         </div>
-        <button class="btn-primary" id="btnGenerate">
-          <span class="btn-icon">⚡</span>
-          <span id="btnText">生成电路</span>
+        <div class="stage-svg" id="stageSvg" hidden></div>
+        <div class="stage-badge" id="stageBadge" hidden>
+          <span class="badge-dot"></span>
+          <span id="stageBadgeText">构图进行中…</span>
+        </div>
+        <button class="replay-btn" id="replayBtn" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5"/></svg>
+          重播构图
         </button>
       </div>
-    </section>
 
-    <!-- 流水线 -->
-    <section class="pipeline" id="pipeline">
-      <div class="step" data-step="1"><span class="step-dot"></span><span class="step-name">需求解析</span></div>
-      <div class="step" data-step="2"><span class="step-dot"></span><span class="step-name">BOM 选型</span></div>
-      <div class="step" data-step="3"><span class="step-dot"></span><span class="step-name">网表连接</span></div>
-      <div class="step" data-step="4"><span class="step-dot"></span><span class="step-name">KiCad 生成</span></div>
-      <div class="step" data-step="5"><span class="step-dot"></span><span class="step-name">报告产出</span></div>
-    </section>
-
-    <!-- 结果区 -->
-    <section class="results" id="results" hidden>
-      <div class="result-head">
-        <div>
-          <h2 class="result-title" id="resultTitle">设计结果</h2>
-          <p class="result-meta" id="resultMeta"></p>
+      <!-- 结果标签页 -->
+      <div class="result-panel" id="resultPanel" hidden>
+        <div class="result-head">
+          <div class="result-info">
+            <h3 class="result-title" id="resultTitle">设计结果</h3>
+            <p class="result-meta" id="resultMeta"></p>
+          </div>
+          <div class="result-actions">
+            <a class="btn-download" id="btnDownload" href="#" download>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+              下载 KiCad 工程
+            </a>
+            <button class="btn-outline" id="btnOpenKicad" title="用本机 KiCad 打开工程">
+              用 KiCad 打开
+            </button>
+          </div>
         </div>
-        <a class="btn-download" id="btnDownload" href="#" download>⬇ 下载 KiCad 工程包</a>
-      </div>
-
-      <div class="tabs" id="tabs">
-        <button class="tab active" data-tab="bom">BOM 清单</button>
-        <button class="tab" data-tab="netlist">网表连接</button>
-        <button class="tab" data-tab="report">工作汇报</button>
-        <button class="tab" data-tab="guide">操作指南</button>
-        <button class="tab" data-tab="hardware">硬件需求</button>
-      </div>
-
-      <div class="tab-panels">
-        <div class="panel active" id="panel-bom"></div>
-        <div class="panel" id="panel-netlist"></div>
-        <div class="panel" id="panel-report"></div>
-        <div class="panel" id="panel-guide"></div>
-        <div class="panel" id="panel-hardware"></div>
+        <div class="tabs" id="tabs">
+          <button class="tab active" data-tab="bom">BOM 清单</button>
+          <button class="tab" data-tab="netlist">网表连接</button>
+          <button class="tab" data-tab="report">工作汇报</button>
+          <button class="tab" data-tab="guide">操作指南</button>
+          <button class="tab" data-tab="hardware">硬件需求</button>
+        </div>
+        <div class="tab-panels">
+          <div class="panel active" id="panel-bom"></div>
+          <div class="panel" id="panel-netlist"></div>
+          <div class="panel" id="panel-report"></div>
+          <div class="panel" id="panel-guide"></div>
+          <div class="panel" id="panel-hardware"></div>
+        </div>
       </div>
     </section>
   </main>
 
-  <footer class="footer">
-    <span>EDA Agent · 课程大作业「AI Agent 电路板设计」</span>
-    <span>KiCad + LLM · 自然语言 → 原理图</span>
-  </footer>
-
   <div class="toast" id="toast"></div>
-
   <script src="/app.js"></script>
 </body>
 </html>

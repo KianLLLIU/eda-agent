@@ -66,3 +66,20 @@
 ## 进阶挑战（已完成）
 
 - **DRC 检查闭环**（部分）：生成器内置校验 + 设计文档标注 ERC/DRC 检查要点，可在 KiCad 中一键运行
+
+---
+
+## 阶段 5：UI 大改版 + 智能助手 + 实时构图（2026-11-06）
+
+- [x] **浅色主题重做**：深色科技风 → 浅色设计系统（PCB 绿主色 + Space Grotesk/Noto Sans SC），更简洁克制
+- [x] **难度选择**：入门（3~6 元件）/ 进阶（8~16）/ 挑战（完整系统），经 Prompt 约束 LLM 控制复杂度
+- [x] **电路板风格选择**：经典绿 / 现代极简 / 复古暖铜，影响实时构图 SVG 配色与前端 accent
+- [x] **智能聊天助手**：对话式设计，提取需求关键词（chips 高亮），支持「把电容换成 100nF」这类修改指令
+- [x] **对话式实时修改**：新增 `/api/revision`，把修改指令 + 当前设计发给 LLM 重写，只改指定部分
+- [x] **实时构图画面**：自研 `render_svg.py` 把设计 JSON 渲染成 SVG 原理图，前端做「元件逐个淡入、连线逐条画出」的实时构图动画
+- [x] **一键打开 KiCad**：新增 `/api/open-kicad`，探测本机 KiCad 并打开生成的 `.kicad_pro`
+- [x] **免费在线 LLM**（上一阶段遗留）：BlockRun 无 key 开源模型，三级降级（自定义 key → 免费 LLM → 离线模板）
+
+### 关键技术点
+- SVG 实时构图：后端 render_svg.py 复用 symbols.py 符号定义 + schematic.py 布局，元件/连线带 `data-i` 动画序号；前端 JS 计算连线 `getTotalLength` 做 stroke-dasharray 逐条画线动画。
+- 对话式修改：`apply_revision()` 把当前 design JSON + 修改指令发给 LLM，输出修改后的完整 JSON，再走 `validate_design` 兜底。

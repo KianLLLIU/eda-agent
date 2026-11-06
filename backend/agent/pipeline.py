@@ -59,7 +59,7 @@ def _match_template(requirement: str):
     return "led_indicator"
 
 
-def generate_design_json(requirement: str, use_llm: bool = None):
+def generate_design_json(requirement: str, use_llm: bool = None, difficulty: str = "intermediate"):
     """自然语言 → 设计 JSON。返回 (design_dict, mode)"""
     client = LLMClient()
     if use_llm is None:
@@ -70,7 +70,7 @@ def generate_design_json(requirement: str, use_llm: bool = None):
             content = client.chat(
                 [
                     {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": build_user_prompt(requirement)},
+                    {"role": "user", "content": build_user_prompt(requirement, difficulty)},
                 ],
                 temperature=0.1,
                 json_mode=True,
@@ -84,6 +84,53 @@ def generate_design_json(requirement: str, use_llm: bool = None):
     else:
         tpl = _match_template(requirement)
         return _load_template(tpl), "template"
+
+
+def apply_revision(design: dict, instruction: str):
+    """对话式实时修改：把修改指令应用到已有设计（LLM 重写修改后的 JSON）。
+
+    返回 (new_design, mode)。失败时抛出 LLMError / DesignError。
+    """
+    client = LLMClient()
+    if not client.available:
+        raise LLMError("无可用 LLM，无法对话式修改")
+
+    current = json.dumps(design, ensure_ascii=False, indent=2)
+    content = client.chat(
+        [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": (
+                "当前电路设计 JSON：\n" + current + "\n\n"
+                "修改指令：\n" + instruction + "\n\n"
+                "请根据修改指令，输出修改后的【完整】电路设计 JSON（保持原有结构，"
+                "只做指令要求的改动，其它元件和连接保持不变）：\n"
+            )},
+        ],
+        temperature=0.1,
+        json_mode=True,
+    )
+    new_design = extract_json(content)
+    return validate_design(new_design), f"llm:{client.mode}"
+
+
+# 关键词提取的术语表（用于聊天助手高亮用户需求关键词）
+_KEYWORD_TERMS = [
+    "led", "发光", "指示灯", "电阻", "电容", "电感", "二极管", "晶振", "三极管",
+    "arduino", "atmega", "stm32", "esp32", "单片机", "最小系统", "主控",
+    "稳压", "ldo", "降压", "升压", "电源", "3.3v", "5v", "12v", "供电",
+    "晶振", "复位", "去耦", "滤波", "i2c", "spi", "uart", "串口", "usb",
+    "传感器", "蜂鸣器", "按键", "开关", "接口", "排针", "排母",
+]
+
+
+def extract_keywords(requirement: str):
+    """从需求文本中提取电路关键词（供前端展示为 chips）"""
+    low = requirement.lower()
+    found = []
+    for term in _KEYWORD_TERMS:
+        if term in low and term not in found:
+            found.append(term)
+    return found[:12]
 
 
 def build_project_files(design: dict, output_dir: str, project_name: str = "circuit"):
