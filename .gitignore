@@ -42,3 +42,6 @@ _get_creds.py
 _*.txt
 _build.py
 _exe_test.py
+
+# 下划线开头的临时脚本
+_*.py
