@@ -40,3 +40,5 @@ Thumbs.db
 _gh_*.py
 _get_creds.py
 _*.txt
+_build.py
+_exe_test.py

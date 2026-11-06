@@ -25,12 +25,13 @@ def main():
     args = parser.parse_args()
 
     import uvicorn
+    from backend.main import app  # 直接导入 app 对象，兼容 PyInstaller 打包
     print("=" * 52)
     print("  EDA Agent · AI 电路设计智能体")
     print(f"  访问地址: http://{args.host}:{args.port}")
     print("  API 文档: http://127.0.0.1:%d/docs" % args.port)
     print("=" * 52)
-    uvicorn.run("backend.main:app", host=args.host, port=args.port, reload=args.reload)
+    uvicorn.run(app, host=args.host, port=args.port, reload=args.reload)
 
 
 if __name__ == "__main__":

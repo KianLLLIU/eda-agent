@@ -4,7 +4,8 @@
 
 import os
 
-root = os.path.abspath(os.path.join(os.path.dirname(SPECPATH), ".."))  # noqa: F821
+# 项目根目录 = 当前工作目录（构建脚本会先 cd 到项目根目录再执行 pyinstaller）
+root = os.path.abspath(os.getcwd())
 
 datas = [
     (os.path.join(root, "frontend"), "frontend"),
@@ -18,7 +19,9 @@ a = Analysis(
     datas=datas,
     hiddenimports=["uvicorn.logging", "uvicorn.loops", "uvicorn.loops.auto", "uvicorn.protocols",
                    "uvicorn.protocols.http", "uvicorn.protocols.http.auto", "uvicorn.protocols.websockets",
-                   "uvicorn.protocols.websockets.auto", "uvicorn.lifespan", "uvicorn.lifespan.on"],
+                   "uvicorn.protocols.websockets.auto", "uvicorn.lifespan", "uvicorn.lifespan.on",
+                   "backend.main", "backend.agent", "backend.agent.pipeline", "backend.kicad_gen",
+                   "backend.reports"],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
