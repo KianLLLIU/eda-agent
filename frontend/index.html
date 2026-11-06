@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EDA Agent · AI 电路设计智能体</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <!-- 背景光晕 -->
+  <div class="bg-glow" aria-hidden="true">
+    <div class="orb orb-a"></div>
+    <div class="orb orb-b"></div>
+    <div class="orb orb-c"></div>
+  </div>
+
+  <!-- 顶栏 -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 4h16v16H4z" opacity="0.35"/>
+          <path d="M7 8h10M7 12h6M7 16h8"/>
+          <circle cx="16" cy="16" r="1.4" fill="currentColor" stroke="none"/>
+          <circle cx="16" cy="8" r="1.4" fill="currentColor" stroke="none"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">EDA&nbsp;Agent</span>
+        <span class="brand-sub">AI 电路设计智能体</span>
+      </div>
+    </div>
+    <div class="status-bar" id="statusBar">
+      <span class="chip" id="chipLlm"><i class="dot"></i>LLM 检测中…</span>
+      <span class="chip" id="chipKicad"><i class="dot"></i>KiCad</span>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- Hero -->
+    <section class="hero">
+      <h1 class="hero-title">说一句人话，<span class="grad">换一块电路板</span></h1>
+      <p class="hero-sub">输入你的功能需求，AI 智能体自动完成 <b>元器件选型 → 网表连接 → KiCad 原理图</b>，并生成工作汇报、操作指南与硬件需求清单。</p>
+    </section>
+
+    <!-- 输入区 -->
+    <section class="card input-card">
+      <label class="input-label" for="requirement">描述你想实现的电路</label>
+      <textarea id="requirement" class="input-box" rows="4"
+        placeholder="例如：帮我设计一块 Arduino 最小系统板，带一个 LED 闪烁指示……"></textarea>
+
+      <div class="chips" id="chips">
+        <span class="chip-example" data-tpl="帮我设计一块 Arduino 最小系统板，带 16MHz 晶振和 LED 闪烁指示">Arduino 最小系统</span>
+        <span class="chip-example" data-tpl="设计一个 LED 指示灯电路，3.3V 供电，绿色 LED">LED 指示灯</span>
+        <span class="chip-example" data-tpl="设计一个 5V 转 3.3V 的 LDO 稳压电路，带输入输出滤波电容">5V→3.3V 稳压</span>
+      </div>
+
+      <div class="actions">
+        <div class="mode-toggle">
+          <span class="mode-label">生成模式</span>
+          <button class="seg active" id="modeAuto">自动</button>
+          <button class="seg" id="modeLlm">强制 LLM</button>
+          <button class="seg" id="modeTpl">离线模板</button>
+        </div>
+        <button class="btn-primary" id="btnGenerate">
+          <span class="btn-icon">⚡</span>
+          <span id="btnText">生成电路</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- 流水线 -->
+    <section class="pipeline" id="pipeline">
+      <div class="step" data-step="1"><span class="step-dot"></span><span class="step-name">需求解析</span></div>
+      <div class="step" data-step="2"><span class="step-dot"></span><span class="step-name">BOM 选型</span></div>
+      <div class="step" data-step="3"><span class="step-dot"></span><span class="step-name">网表连接</span></div>
+      <div class="step" data-step="4"><span class="step-dot"></span><span class="step-name">KiCad 生成</span></div>
+      <div class="step" data-step="5"><span class="step-dot"></span><span class="step-name">报告产出</span></div>
+    </section>
+
+    <!-- 结果区 -->
+    <section class="results" id="results" hidden>
+      <div class="result-head">
+        <div>
+          <h2 class="result-title" id="resultTitle">设计结果</h2>
+          <p class="result-meta" id="resultMeta"></p>
+        </div>
+        <a class="btn-download" id="btnDownload" href="#" download>⬇ 下载 KiCad 工程包</a>
+      </div>
+
+      <div class="tabs" id="tabs">
+        <button class="tab active" data-tab="bom">BOM 清单</button>
+        <button class="tab" data-tab="netlist">网表连接</button>
+        <button class="tab" data-tab="report">工作汇报</button>
+        <button class="tab" data-tab="guide">操作指南</button>
+        <button class="tab" data-tab="hardware">硬件需求</button>
+      </div>
+
+      <div class="tab-panels">
+        <div class="panel active" id="panel-bom"></div>
+        <div class="panel" id="panel-netlist"></div>
+        <div class="panel" id="panel-report"></div>
+        <div class="panel" id="panel-guide"></div>
+        <div class="panel" id="panel-hardware"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span>EDA Agent · 课程大作业「AI Agent 电路板设计」</span>
+    <span>KiCad + LLM · 自然语言 → 原理图</span>
+  </footer>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# 生成产物
+output/
+*.zip
+*.kicad_sch
+*.kicad_pro
+*.kicad_pcb
+sym-lib-table
+fp-lib-table
+design.json
+BOM.csv
+
+# 测试临时脚本
+_smoke_test.py
+_e2e_test.py
+_extract_ppt.py
+_get_creds.py
+
+# 打包产物
+dist/
+build/
+*.spec.bak
+
+# 系统
+.DS_Store
+Thumbs.db
+
+# 密钥（绝不提交）
+.env
+*.key

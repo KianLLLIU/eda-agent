@@ -1,0 +1,16 @@
+services:
+  eda-agent:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      # 可选：配置 LLM（不配则走离线模板）
+      # - EDA_AGENT_API_KEY=your_key_here
+      # - EDA_AGENT_BASE_URL=https://api.deepseek.com/v1
+      # - EDA_AGENT_MODEL=deepseek-chat
+      - EDA_AGENT_OUTPUT=/app/output
+    volumes:
+      - ./output:/app/output
+    restart: unless-stopped

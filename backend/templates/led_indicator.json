@@ -1,0 +1,20 @@
+{
+  "title": "LED 指示灯电路",
+  "company": "SDU",
+  "revision": "1.0",
+  "paper": "A4",
+  "groups": [
+    { "name": "指示模块", "refs": ["R1", "LED1"] },
+    { "name": "接口模块", "refs": ["J1"] }
+  ],
+  "components": [
+    { "ref": "R1", "lib": "Device", "symbol": "R", "value": "330", "footprint": "Resistor_SMD:R_0805_2012Metric" },
+    { "ref": "LED1", "lib": "Device", "symbol": "LED", "value": "绿色", "footprint": "LED_SMD:LED_0805_2012Metric" },
+    { "ref": "J1", "lib": "Connector_Generic", "symbol": "Conn_01x02", "value": "电源 3.3V", "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical" }
+  ],
+  "nets": [
+    { "name": "VCC", "connections": [ { "ref": "J1", "pin": "1" }, { "ref": "R1", "pin": "1" } ] },
+    { "name": "GND", "connections": [ { "ref": "J1", "pin": "2" }, { "ref": "LED1", "pin": "1" } ] },
+    { "name": "NET_LED", "connections": [ { "ref": "R1", "pin": "2" }, { "ref": "LED1", "pin": "2" } ] }
+  ]
+}
