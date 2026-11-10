@@ -1,0 +1,21 @@
+<Slide style={{ background: '#0E3F8C', width: '1280px', height: '720px', padding: 0 }}>
+  <Box style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: 720, background: '#0E3F8C' }} />
+  <Box style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: 6, background: '#1E4FA8' }} />
+  <Box style={{ position: 'absolute', top: 0, right: 0, width: 420, height: 420, borderRadius: 210, background: '#1E4FA8', opacity: 0.18 }} />
+  <Box style={{ position: 'absolute', bottom: 0, left: 0, width: 360, height: 360, borderRadius: 180, background: '#3D7BD9', opacity: 0.12 }} />
+  <Box style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 100px' }}>
+    <Text style={{ fontSize: 22, color: '#8FB3E8', letterSpacing: 6, marginBottom: 28 }}>课 程 大 作 业 · 答 辩</Text>
+    <Text style={{ fontSize: 62, fontWeight: 'bold', color: '#FFFFFF', textAlign: 'center', lineHeight: 1.2, letterSpacing: 2 }}>
+      AI Agent 电路板设计
+    </Text>
+    <Text style={{ fontSize: 26, color: '#C5D5F0', marginTop: 18, textAlign: 'center', letterSpacing: 1 }}>
+      Design a PCB with Natural Language
+    </Text>
+    <Box style={{ width: 64, height: 3, background: '#3D7BD9', marginTop: 44 }} />
+    <Box style={{ flexDirection: 'row', marginTop: 48, gap: 44, alignItems: 'center' }}>
+      <Text style={{ fontSize: 17, color: '#E8EFF8' }}>山东大学未来技术学院</Text>
+      <Text style={{ fontSize: 17, color: '#E8EFF8' }}>汇报人：刘洺绮（Kian）</Text>
+      <Text style={{ fontSize: 17, color: '#E8EFF8' }}>2026 年 11 月</Text>
+    </Box>
+  </Box>
+</Slide>

@@ -1,0 +1,20 @@
+<Slide style={{ background: '#0E3F8C', width: '1280px', height: '720px', padding: 0 }}>
+  <Box style={{ position: 'absolute', top: 0, right: 0, width: 420, height: 420, borderRadius: 210, background: '#1E4FA8', opacity: 0.18 }} />
+  <Box style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 100px', gap: 26 }}>
+    <Text style={{ fontSize: 40, fontWeight: 'bold', color: '#FFFFFF', textAlign: 'center', lineHeight: 1.45 }}>
+      教会 AI 画电路板<br />让「一句话」变成「一张可制造的原理图」
+    </Text>
+    <Box style={{ width: 64, height: 3, background: '#3D7BD9' }} />
+    <Text style={{ fontSize: 18, color: '#C5D5F0', textAlign: 'center', lineHeight: 1.7 }}>
+      自然语言 → LLM Prompt → 结构化 JSON → KiCad 脚本 → 原理图 / PCB → DRC 闭环
+    </Text>
+    <Box style={{ flexDirection: 'row', gap: 16, marginTop: 10 }}>
+      {['skidl', 'PCBGPT', 'Circuitron', 'KiCad'].map((t, i) => (
+        <Text key={i} style={{ fontSize: 13, color: '#8FB3E8', border: '1px solid #3D7BD9', padding: '5px 12px', borderRadius: 999 }}>{t}</Text>
+      ))}
+    </Box>
+    <Text style={{ fontSize: 16, color: '#8FB3E8', marginTop: 16 }}>
+      感谢评审老师 · 欢迎提问
+    </Text>
+  </Box>
+</Slide>

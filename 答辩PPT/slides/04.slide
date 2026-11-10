@@ -1,0 +1,45 @@
+<Slide style={{ background: '#FFFFFF', width: '1280px', height: '720px', padding: 0 }}>
+  <Box style={{ height: 88, background: '#0E3F8C', flexDirection: 'row', alignItems: 'center', padding: '0 40px', gap: 16 }}>
+    <Box style={{ width: 6, height: 28, background: '#3D7BD9', borderRadius: 3 }} />
+    <Text style={{ fontSize: 30, fontWeight: 'bold', color: '#FFFFFF' }}>项目概述 · 一句话目标</Text>
+  </Box>
+  <Box style={{ flex: 1, flexDirection: 'row', padding: '34px 40px', gap: 28 }}>
+    <Box style={{ width: 360, background: '#F0F5FC', borderRadius: 12, padding: '30px 26px', gap: 18 }}>
+      <Text style={{ fontSize: 15, color: '#1E4FA8', fontWeight: 'bold', letterSpacing: 2 }}>一句话</Text>
+      <Text style={{ fontSize: 26, fontWeight: 'bold', color: '#1A2230', lineHeight: 1.5 }}>
+        「说一句人话，<br />换一块电路板」
+      </Text>
+      <Box style={{ height: 1, background: '#D6DCE5' }} />
+      <Text style={{ fontSize: 16, color: '#4A5568', lineHeight: 1.7 }}>
+        输入「帮我设计一块 Arduino 最小系统板」，Agent 自动产出
+        <span style={{ color: '#1E4FA8', fontWeight: 'bold' }}> BOM 清单 · 网表连接 · KiCad 原理图</span>。
+      </Text>
+      <Box style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, marginTop: 6 }}>
+        <Text style={{ fontSize: 40, fontWeight: 'bold', color: '#1E4FA8' }}>40</Text>
+        <Text style={{ fontSize: 15, color: '#4A5568' }}>分 · 基础任务五步走</Text>
+      </Box>
+    </Box>
+    <Box style={{ flex: 1, gap: 16 }}>
+      <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#1A2230' }}>基础任务五步走（环环相扣）</Text>
+      {[
+        { n: '01', t: '环境搭建', d: '装好 Python 3.10+ 与 KiCad 8，跑通流程' },
+        { n: '02', t: '自然语言 → BOM', d: '设计提示词，让 LLM 从一句话生成元器件清单' },
+        { n: '03', t: '连接关系生成', d: 'LLM 给出引脚级连接，输出结构化 JSON' },
+        { n: '04', t: '导入 KiCad', d: '用 Python 脚本把 JSON 变成真实原理图' },
+        { n: '05', t: '交互式修正', d: '支持追问改需求（如「把电容换成 100nF」）' },
+      ].map((s, i) => (
+        <Box key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 16, padding: '14px 18px', background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 10 }}>
+          <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#1E4FA8', width: 40 }}>{s.n}</Text>
+          <Box style={{ flex: 1, gap: 2 }}>
+            <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#1A2230' }}>{s.t}</Text>
+            <Text style={{ fontSize: 14, color: '#4A5568' }}>{s.d}</Text>
+          </Box>
+        </Box>
+      ))}
+    </Box>
+  </Box>
+  <Box style={{ height: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: '0 40px' }}>
+    <Text style={{ fontSize: 13, color: '#8B97A8' }}>山东大学未来技术学院</Text>
+    <Text style={{ fontSize: 14, color: '#1E4FA8', fontWeight: 'bold' }}>04 / 13</Text>
+  </Box>
+</Slide>

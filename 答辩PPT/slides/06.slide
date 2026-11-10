@@ -1,0 +1,15 @@
+<Slide style={{ background: '#0E3F8C', width: '1280px', height: '720px', padding: 0 }}>
+  <Box style={{ position: 'absolute', bottom: 0, right: 0, width: 460, height: 460, borderRadius: 230, background: '#1E4FA8', opacity: 0.15 }} />
+  <Box style={{ flex: 1, flexDirection: 'row', alignItems: 'center', padding: '0 100px', gap: 60 }}>
+    <Text style={{ fontSize: 200, fontWeight: 'bold', color: '#FFFFFF', opacity: 0.28 }}>02</Text>
+    <Box style={{ flex: 1, gap: 22 }}>
+      <Text style={{ fontSize: 46, fontWeight: 'bold', color: '#FFFFFF' }}>核心设计</Text>
+      <Box style={{ width: 56, height: 3, background: '#3D7BD9' }} />
+      <Box style={{ gap: 14, marginTop: 10 }}>
+        <Text style={{ fontSize: 20, color: '#C5D5F0' }}>· Agent 系统架构（编排 + 三级降级）</Text>
+        <Text style={{ fontSize: 20, color: '#C5D5F0' }}>· Prompt 设计：防幻觉三招</Text>
+        <Text style={{ fontSize: 20, color: '#C5D5F0' }}>· 自研 KiCad 原理图生成器</Text>
+      </Box>
+    </Box>
+  </Box>
+</Slide>

@@ -1,0 +1,15 @@
+<Slide style={{ background: '#0E3F8C', width: '1280px', height: '720px', padding: 0 }}>
+  <Box style={{ position: 'absolute', bottom: 0, right: 0, width: 460, height: 460, borderRadius: 230, background: '#1E4FA8', opacity: 0.15 }} />
+  <Box style={{ flex: 1, flexDirection: 'row', alignItems: 'center', padding: '0 100px', gap: 60 }}>
+    <Text style={{ fontSize: 200, fontWeight: 'bold', color: '#FFFFFF', opacity: 0.28 }}>01</Text>
+    <Box style={{ flex: 1, gap: 22 }}>
+      <Text style={{ fontSize: 46, fontWeight: 'bold', color: '#FFFFFF' }}>项目概述</Text>
+      <Box style={{ width: 56, height: 3, background: '#3D7BD9' }} />
+      <Box style={{ gap: 14, marginTop: 10 }}>
+        <Text style={{ fontSize: 20, color: '#C5D5F0' }}>· 一句话讲清目标：自然语言 → 电路板</Text>
+        <Text style={{ fontSize: 20, color: '#C5D5F0' }}>· 基础任务五步走闭环</Text>
+        <Text style={{ fontSize: 20, color: '#C5D5F0' }}>· 六步技术路线总览</Text>
+      </Box>
+    </Box>
+  </Box>
+</Slide>

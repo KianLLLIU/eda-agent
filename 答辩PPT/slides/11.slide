@@ -1,0 +1,35 @@
+<Slide style={{ background: '#FFFFFF', width: '1280px', height: '720px', padding: 0 }}>
+  <Box style={{ height: 88, background: '#0E3F8C', flexDirection: 'row', alignItems: 'center', padding: '0 40px', gap: 16 }}>
+    <Box style={{ width: 6, height: 28, background: '#3D7BD9', borderRadius: 3 }} />
+    <Text style={{ fontSize: 30, fontWeight: 'bold', color: '#FFFFFF' }}>实验结果 · 端到端跑通</Text>
+  </Box>
+  <Box style={{ flex: 1, padding: '40px 60px', gap: 30, justifyContent: 'center' }}>
+    <Box style={{ flexDirection: 'row', gap: 40, justifyContent: 'center' }}>
+      <Box style={{ flex: 1, alignItems: 'center', gap: 10, padding: '30px 20px', background: '#F0F5FC', borderRadius: 14 }}>
+        <Text style={{ fontSize: 88, fontWeight: 'bold', color: '#1E4FA8', lineHeight: 1 }}>13</Text>
+        <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#1A2230' }}>个元件</Text>
+        <Text style={{ fontSize: 14, color: '#4A5568', textAlign: 'center' }}>免费 LLM 一键生成<br />Arduino 最小系统</Text>
+      </Box>
+      <Box style={{ flex: 1, alignItems: 'center', gap: 10, padding: '30px 20px', background: '#F0F5FC', borderRadius: 14 }}>
+        <Text style={{ fontSize: 88, fontWeight: 'bold', color: '#1E4FA8', lineHeight: 1 }}>7</Text>
+        <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#1A2230' }}>条网络</Text>
+        <Text style={{ fontSize: 14, color: '#4A5568', textAlign: 'center' }}>引脚级连接<br />全部正确</Text>
+      </Box>
+      <Box style={{ flex: 1, alignItems: 'center', gap: 10, padding: '30px 20px', background: '#F0F5FC', borderRadius: 14 }}>
+        <Text style={{ fontSize: 88, fontWeight: 'bold', color: '#1E4FA8', lineHeight: 1 }}>5/5</Text>
+        <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#1A2230' }}>基础任务</Text>
+        <Text style={{ fontSize: 14, color: '#4A5568', textAlign: 'center' }}>五步走<br />全部跑通</Text>
+      </Box>
+    </Box>
+    <Box style={{ background: '#0E3F8C', borderRadius: 12, padding: '20px 28px', flexDirection: 'row', alignItems: 'center', gap: 20 }}>
+      <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#3D7BD9' }}>▍</Text>
+      <Text style={{ fontSize: 17, color: '#FFFFFF', lineHeight: 1.6 }}>
+        自然语言 → BOM → 网表 JSON → KiCad 原理图，全链路真实可运行；无 API Key 时也能用免费开源 LLM 生成，保证任何环境可复现。
+      </Text>
+    </Box>
+  </Box>
+  <Box style={{ height: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: '0 40px' }}>
+    <Text style={{ fontSize: 13, color: '#8B97A8' }}>山东大学未来技术学院</Text>
+    <Text style={{ fontSize: 14, color: '#1E4FA8', fontWeight: 'bold' }}>11 / 13</Text>
+  </Box>
+</Slide>

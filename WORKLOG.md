@@ -83,3 +83,22 @@
 ### 关键技术点
 - SVG 实时构图：后端 render_svg.py 复用 symbols.py 符号定义 + schematic.py 布局，元件/连线带 `data-i` 动画序号；前端 JS 计算连线 `getTotalLength` 做 stroke-dasharray 逐条画线动画。
 - 对话式修改：`apply_revision()` 把当前 design JSON + 修改指令发给 LLM，输出修改后的完整 JSON，再走 `validate_design` 兜底。
+
+---
+
+## 阶段 6：答辩 PPT + 演示视频脚本（2026-11-10）
+
+- [x] **答辩 PPT**（`答辩PPT/AI Agent电路板设计答辩.pptx`，13 页，学术风蓝白配色）：
+  - 封面 / 目录 / 三个章节扉页 / 项目概述 / 技术路线 / Agent 架构 / Prompt 设计 / KiCad 生成器 / 实验结果 / 失败案例 / 总结致谢
+  - 采用 tencent-pptx 学术风模板（主蓝 #1E4FA8 + 藏蓝 #0E3F8C，思源黑），目录↔章节扉页契约、Hero 页占比、非对称版式占比均合规
+  - 源文件在 `答辩PPT/slides/*.slide`（STORY.md + DESIGN.md 可复现/改版）
+- [x] **演示视频脚本**（`docs/演示视频脚本.md`）：7 幕分镜 + 逐秒旁白 + 字幕全文 + 录制注意事项，照着录即可
+
+### 提交物清单更新
+
+| 要求 | 状态 |
+|------|------|
+| 代码仓库（含 README） | ✅ |
+| 设计报告 | ✅ `docs/设计报告.md` |
+| 演示视频（3–5 分钟） | ⏳ 脚本已就绪，待照脚本录屏 |
+| 答辩 PPT | ✅ `答辩PPT/AI Agent电路板设计答辩.pptx` |

@@ -1,0 +1,43 @@
+<Slide style={{ background: '#FFFFFF', width: '1280px', height: '720px', padding: 0 }}>
+  <Box style={{ height: 88, background: '#0E3F8C', flexDirection: 'row', alignItems: 'center', padding: '0 40px', gap: 16 }}>
+    <Box style={{ width: 6, height: 28, background: '#3D7BD9', borderRadius: 3 }} />
+    <Text style={{ fontSize: 30, fontWeight: 'bold', color: '#FFFFFF' }}>Prompt 设计 · 防幻觉三招</Text>
+  </Box>
+  <Box style={{ flex: 1, flexDirection: 'row', padding: '34px 40px', gap: 22 }}>
+    {[
+      {
+        n: '01', t: '符号目录约束', lead: '从源头杜绝「编造器件」',
+        body: '在 Prompt 中显式列出可用符号及其引脚编号，要求模型只能在此表内选型、只能用表中引脚号连接。例如列出「Device:R（引脚 1,2）」「ATmega328P（引脚 7=VCC、8=GND…）」——模型想连一个不存在的引脚也无从编起。',
+        tag: '约束输入',
+      },
+      {
+        n: '02', t: 'Few-shot 示例', lead: '用最小示例锚定结构',
+        body: '给出一个完整的最小电路示例（LED + 限流电阻），锚定输出 JSON 的字段结构（groups / components / nets）、命名规范（大写网络名、ref 唯一）与连接格式，稳定模型的输出形态，避免每次输出格式漂移。',
+        tag: '锚定结构',
+      },
+      {
+        n: '03', t: 'JSON + 校验兜底', lead: '从出口再拦一道',
+        body: '用 response_format 强制 JSON 输出；再用 validator 做工程化兜底——校验元件编号唯一、符号存在、引脚合法，非法输出直接拦截并降级。即便 Prompt 完美，模型仍可能出错，双保险让系统始终可用。',
+        tag: '兜底校验',
+      },
+    ].map((c, i) => (
+      <Box key={i} style={{ flex: 1, background: '#F7F9FC', border: '1px solid #D6DCE5', borderRadius: 12, padding: '26px 24px', gap: 14, justifyContent: 'space-between' }}>
+        <Box style={{ gap: 12 }}>
+          <Box style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <Box style={{ width: 52, height: 40, background: '#1E4FA8', borderRadius: 6, alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#FFFFFF' }}>{c.n}</Text>
+            </Box>
+            <Text style={{ fontSize: 21, fontWeight: 'bold', color: '#1A2230' }}>{c.t}</Text>
+          </Box>
+          <Text style={{ fontSize: 14, color: '#1E4FA8', fontWeight: 'bold' }}>{c.lead}</Text>
+          <Text style={{ fontSize: 14.5, color: '#4A5568', lineHeight: 1.7 }}>{c.body}</Text>
+        </Box>
+        <Text style={{ fontSize: 13, color: '#FFFFFF', background: '#3D7BD9', padding: '5px 12px', borderRadius: 6, alignSelf: 'flex-start' }}>{c.tag}</Text>
+      </Box>
+    ))}
+  </Box>
+  <Box style={{ height: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: '0 40px' }}>
+    <Text style={{ fontSize: 13, color: '#8B97A8' }}>山东大学未来技术学院</Text>
+    <Text style={{ fontSize: 14, color: '#1E4FA8', fontWeight: 'bold' }}>08 / 13</Text>
+  </Box>
+</Slide>
