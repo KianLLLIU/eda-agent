@@ -11,6 +11,9 @@
 >
 > **v2.0.1 修复**：重写 KiCad 安装探测（手动路径 → 注册表卸载项 → 常见目录/各盘符 → 快捷方式 → PATH），
 > 解决「KiCad 装在自定义目录时检测不到」的问题；设置面板可手动指定路径、查看探测诊断。
+>
+> **v2.0.2 修复**：生成的 KiCad 工程文件按 KiCad 9/10 官方格式重写，解决用 KiCad 打开时报
+> `Unknown token 'uuid'` / 原理图加载失败。现已用 KiCad 10.0.7 的 `kicad-cli` 实测通过。
 > [桌面版下载与使用说明 →](docs/DESKTOP-INSTALL.md)
 
 ## ✨ 功能特性
@@ -70,7 +73,7 @@
 
 ### 方式一：桌面应用（推荐，无需 Python）
 
-去仓库 **Releases** 下载 `EDA-Agent-Setup-v2.0.1.exe` 双击安装，或下载 `EDA-Agent.exe` 免安装直接双击。
+去仓库 **Releases** 下载 `EDA-Agent-Setup-v2.0.2.exe` 双击安装，或下载 `EDA-Agent.exe` 免安装直接双击。
 安装后有开始菜单 / 桌面快捷方式，卸载走控制面板。完整说明见 [桌面版安装指南](docs/DESKTOP-INSTALL.md)。
 
 自己构建：
@@ -78,7 +81,7 @@
 ```powershell
 pip install -r requirements-desktop.txt
 powershell -ExecutionPolicy Bypass -File scripts\build_desktop.ps1
-# 产物：dist\EDA-Agent.exe 与 dist\installer\EDA-Agent-Setup-v2.0.1.exe
+# 产物：dist\EDA-Agent.exe 与 dist\installer\EDA-Agent-Setup-v2.0.2.exe
 ```
 
 推一个 `v*` 标签即可让 GitHub Actions 自动构建安装包并发布 Release。

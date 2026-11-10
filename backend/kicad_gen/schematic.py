@@ -93,8 +93,9 @@ def _graphics_s(g):
                 f'(end {_fmt(x2)} {_fmt(y2)}) '
                 f'(stroke (width 0.254) (type default)) (fill (type none)))\n')
     if kind == "line":
-        pts = " ".join(f"{_fmt(x)} {_fmt(y)}" for (x, y) in g[1])
-        return (f'      (polyline (pts (xy {pts})) '
+        # KiCad 要求每个顶点单独一个 (xy x y)，不能写成 (xy x1 y1 x2 y2 ...)
+        pts = " ".join(f"(xy {_fmt(x)} {_fmt(y)})" for (x, y) in g[1])
+        return (f'      (polyline (pts {pts}) '
                 f'(stroke (width 0.254) (type default)) (fill (type none)))\n')
     return ""
 
@@ -141,8 +142,12 @@ def _module_rect_s(x1, y1, x2, y2, name, lx, ly):
     """模块虚线边框 + 模块名"""
     s = (f'  (rectangle (start {_fmt(x1)} {_fmt(y1)}) (end {_fmt(x2)} {_fmt(y2)}) '
          f'(stroke (width 0.127) (type dash)) (fill (type none)) (uuid "{_u()}"))\n')
+    # 注意括号层级：(text ... (effects ...) (uuid "..."))，uuid 必须在 text 内部。
+    # 旧版这里多写了一个 ')' 提前闭合 text，导致每个模块净少 1 个左括号，
+    # 整个 .kicad_sch 括号不平衡，KiCad 直接拒绝加载。
     s += (f'  (text "{name}" (at {_fmt(lx)} {_fmt(ly)} 0) '
-          f'(effects (font (size 1.27 1.27)))) (uuid "{_u()}"))\n')
+          f'(effects (font (size 1.27 1.27))) '
+          f'(uuid "{_u()}"))\n')
     return s
 
 

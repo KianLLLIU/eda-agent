@@ -137,15 +137,13 @@ def build_sym_lib_table(project_name):
 
 
 def build_fp_lib_table():
-    """生成 fp-lib-table（引用 KiCad 标准封装库）"""
+    """生成工程级 fp-lib-table（空表，让 KiCad 使用自带的全局封装库表）。
+
+    v2.0.2 修复：旧版写死 ``${KICAD8_FOOTPRINT_DIR}``，在 KiCad 9/10 上该变量
+    不存在（分别叫 KICAD9_/KICAD10_FOOTPRINT_DIR），工程级表反而会遮蔽全局表，
+    导致标准封装（Resistor_SMD 等）找不到。留空即可跨 8/9/10 通用。
+    """
     return """(fp_lib_table
   (version 7)
-  (lib (name "Resistor_SMD")(type "KiCad")(uri "${KICAD8_FOOTPRINT_DIR}/Resistor_SMD.pretty")(options "")(descr "Resistor SMD"))
-  (lib (name "Capacitor_SMD")(type "KiCad")(uri "${KICAD8_FOOTPRINT_DIR}/Capacitor_SMD.pretty")(options "")(descr "Capacitor SMD"))
-  (lib (name "LED_SMD")(type "KiCad")(uri "${KICAD8_FOOTPRINT_DIR}/LED_SMD.pretty")(options "")(descr "LED SMD"))
-  (lib (name "Package_DIP")(type "KiCad")(uri "${KICAD8_FOOTPRINT_DIR}/Package_DIP.pretty")(options "")(descr "DIP packages"))
-  (lib (name "Connector_PinHeader_2.54mm")(type "KiCad")(uri "${KICAD8_FOOTPRINT_DIR}/Connector_PinHeader_2.54mm.pretty")(options "")(descr "Pin headers"))
-  (lib (name "Crystal")(type "KiCad")(uri "${KICAD8_FOOTPRINT_DIR}/Crystal.pretty")(options "")(descr "Crystal"))
-  (lib (name "Package_TO_SOT_SMD")(type "KiCad")(uri "${KICAD8_FOOTPRINT_DIR}/Package_TO_SOT_SMD.pretty")(options "")(descr "SOT packages"))
 )
 """
