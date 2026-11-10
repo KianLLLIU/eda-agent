@@ -1,13 +1,19 @@
 ; ===========================================================================
-;  EDA Agent 桌面版安装程序（Inno Setup 6）
+;  EDA Agent desktop installer (Inno Setup 6)
 ;
-;  编译方式：
+;  Build:
 ;    ISCC.exe installer\EDA-Agent.iss
-;  或在项目根目录运行（推荐）：
+;  or from project root:
 ;    powershell -ExecutionPolicy Bypass -File scripts\build_desktop.ps1
 ;
-;  产物：dist\installer\EDA-Agent-Setup-v2.0.0.exe
-;  安装后：开始菜单 + 可选桌面快捷方式 + 控制面板可卸载
+;  Output: dist\installer\EDA-Agent-Setup-v2.0.0.exe
+;  Installs: Start Menu entry, optional desktop shortcut, uninstaller.
+;
+;  NOTE: This file is intentionally pure ASCII. Inno Setup reads .iss files
+;  using the system ANSI codepage unless a BOM is present, and the official
+;  compiler does not ship ChineseSimplified.isl. Keeping everything ASCII
+;  guarantees a clean build on any machine / CI runner. Localized docs live
+;  in docs\DESKTOP-INSTALL.md (shipped with the installer).
 ; ===========================================================================
 
 #define MyAppName "EDA Agent"
@@ -44,42 +50,42 @@ PrivilegesRequired=admin
 PrivilegesRequiredOverridesAllowed=dialog
 VersionInfoVersion={#MyAppVersion}.0
 VersionInfoCompany={#MyAppPublisher}
-VersionInfoDescription=AI 电路设计智能体 - 自然语言驱动 KiCad 电路设计
+VersionInfoDescription=AI Circuit Design Agent - natural language to KiCad schematics
 VersionInfoProductName={#MyAppName}
 
 [Languages]
-Name: "chinesesimplified"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Additional shortcuts:"; Flags: unchecked
 
 [Files]
-; 主程序：PyInstaller 单文件 exe（已内含 Python 运行时、后端、前端与模板）
+; Main program: PyInstaller one-file exe (Python runtime, backend, frontend and
+; templates are all embedded).
 Source: "..\dist\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-; 图标单独放一份，供快捷方式与卸载程序使用
+; Icon kept separately for shortcuts and the uninstaller entry
 Source: "..\assets\eda-agent.ico"; DestDir: "{app}"; Flags: ignoreversion
-; 随包附带说明，方便离线用户查看
+; Offline documentation
 Source: "..\docs\DESKTOP-INSTALL.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\eda-agent.ico"
-Name: "{group}\查看使用说明"; Filename: "{app}\README.md"
-Name: "{group}\卸载 {#MyAppName}"; Filename: "{uninstallexe}"
+Name: "{group}\User Guide"; Filename: "{app}\README.md"
+Name: "{group}\Uninstall {#MyAppName}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon; IconFilename: "{app}\eda-agent.ico"
 
 [Run]
-Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#MyAppExeName}"; Description: "Launch EDA Agent"; Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]
-; 卸载不删除用户数据（会话历史 / 设置 / 生成的工程），避免误删用户成果；
-; 仅清理可能残留在安装目录的临时文件。
+; User data (sessions, settings, generated projects) lives under the user's home
+; directory and is intentionally NOT removed by the uninstaller.
 Type: files; Name: "{app}\desktop.log"
 
 [Code]
-// Windows 10/11 一般自带 WebView2；万一缺失，程序会自动降级到浏览器模式。
-// 这里只做友好提示，不阻断安装。
+// Windows 10/11 normally ships WebView2. If missing, the app automatically
+// falls back to opening the default browser, so installation is never blocked.
 function IsWebView2Present(): Boolean;
 begin
   Result :=
@@ -91,8 +97,8 @@ end;
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if (CurStep = ssPostInstall) and (not IsWebView2Present()) then
-    MsgBox('未检测到 Microsoft Edge WebView2 运行时。' + #13#10 + #13#10 +
-           'EDA Agent 仍可正常使用（会自动改用默认浏览器打开界面）。' + #13#10 +
-           '如需原生窗口体验，建议安装 WebView2 Runtime 后重新启动本程序。',
+    MsgBox('Microsoft Edge WebView2 Runtime was not detected.' + #13#10 + #13#10 +
+           'EDA Agent still works: it will automatically open in your default browser.' + #13#10 +
+           'For a native window experience, install WebView2 Runtime and restart the app.',
            mbInformation, MB_OK);
 end;

@@ -4,6 +4,11 @@ name: Build Desktop App
 # Trigger manually from the Actions tab, or push a tag like v2.0.0.
 on:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Publish to an existing release tag (e.g. v2.0.0)'
+        required: false
+        default: ''
   push:
     tags:
       - 'v*'
@@ -58,23 +63,23 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
+      # Use gh CLI with --clobber so re-runs can overwrite an existing asset
+      # (e.g. a portable exe published earlier) instead of failing with 422.
       - name: Publish GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
-        with:
-          name: EDA Agent ${{ github.ref_name }} - Desktop
-          body: |
-            ## EDA Agent Desktop ${{ github.ref_name }}
-
-            **Downloads (Windows x64)**
-            - `EDA-Agent-Setup-*.exe` - recommended installer (Start Menu / desktop shortcut / uninstaller)
-            - `EDA-Agent.exe` - portable single file, double-click to run, no install needed
-
-            Requires Windows 10/11. WebView2 is built into most systems;
-            without it the app automatically opens in your default browser.
-            No Python, no API key and no internet connection required to generate circuits.
-          files: |
-            dist/EDA-Agent.exe
-            dist/installer/*.exe
-          generate_release_notes: true
-          draft: false
+        if: startsWith(github.ref, 'refs/tags/v') || inputs.release_tag != ''
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $tag = "${{ inputs.release_tag }}"
+          if (-not $tag) { $tag = "${{ github.ref_name }}" }
+          gh release view $tag | Out-Null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $tag --title "EDA Agent $tag - Desktop" --generate-notes
+          }
+          gh release upload $tag dist/EDA-Agent.exe --clobber
+          $setup = Get-ChildItem dist/installer/*.exe -ErrorAction SilentlyContinue
+          if ($setup) {
+            foreach ($f in $setup) { gh release upload $tag $f.FullName --clobber }
+          }
+          gh release view $tag --json assets --jq '.assets[].name'
