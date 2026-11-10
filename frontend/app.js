@@ -25,6 +25,7 @@
     panY: 0,
     theme: localStorage.getItem('eda-theme') || 'light',
     autoPreview: true,
+    kicad: null,
     lastUserText: '',
     messages: []          // {role, text} 用于导出对话
   };
@@ -479,7 +480,7 @@
     $('#overlay').hidden = false;
     $('#' + id).hidden = false;
     if (id === 'historyDrawer') loadHistory();
-    if (id === 'settingsDrawer') loadSettings();
+    if (id === 'settingsDrawer') { loadSettings(); loadKicad(false); }
   }
   function closeDrawers() {
     $('#overlay').hidden = true;
@@ -541,6 +542,7 @@
       $('#setModel').value = s.model || '';
       $('#setTimeout').value = s.timeout || 60;
       $('#setNoFree').checked = !!s.no_free_llm;
+      $('#setKicadPath').value = s.kicad_path || '';
       $('#setAutoPreview').checked = s.auto_preview !== false;
       state.autoPreview = s.auto_preview !== false;
       $('#setDarkTheme').checked = state.theme === 'dark';
@@ -655,6 +657,82 @@
     $('#helpBody').innerHTML = h;
   }
 
+  /* --------------------------------------------------------- KiCad 集成 */
+  function renderKicadChip(k) {
+    var c = $('#chipKicad');
+    if (!c) return;
+    c.classList.remove('ok', 'warn');
+    if (k && k.found) {
+      c.classList.add('ok');
+      c.querySelector('.chip-txt').textContent = 'KiCad ' + (k.version || '已就绪');
+      c.title = '已检测到：' + k.path + '\n来源：' + k.source + '\n点击可查看 / 修改路径';
+    } else {
+      c.classList.add('warn');
+      c.querySelector('.chip-txt').textContent = 'KiCad 未检测到 · 点此设置';
+      c.title = (k && k.hint) || '点击设置 KiCad 路径';
+    }
+  }
+
+  async function loadKicad(force) {
+    var st = $('#kicadState');
+    if (st) st.textContent = '检测中…';
+    try {
+      var k = force
+        ? await api('/api/kicad/detect', { method: 'POST', body: {} })
+        : await api('/api/kicad');
+      state.kicad = k;
+      renderKicadChip(k);
+      if (st) {
+        st.className = 'kicad-state ' + (k.found ? 'ok' : 'warn');
+        st.innerHTML = k.found
+          ? '<b>已检测到 KiCad ' + esc(k.version || '') + '</b><br/><span class="kicad-path">' + esc(k.path || '') +
+            '</span><br/><small>来源：' + esc(k.source) + ' · 自动检查 ' + k.checked_count + ' 处</small>'
+          : '<b>未检测到 KiCad</b><br/><small>' + esc(k.hint || '') + '</small>';
+      }
+      var diag = $('#kicadDiag');
+      if (diag) {
+        var html = '<div class="diag-title">自动探测检查过的位置（' + k.checked_count + '）</div>';
+        html += (k.checked || []).slice(0, 20).map(function (x) {
+          return '<div class="diag-line">' + esc(x) + '</div>';
+        }).join('') || '<div class="diag-line">（本次由手动配置 / 缓存直接命中，未展开扫描）</div>';
+        if ((k.candidates || []).length) {
+          html += '<div class="diag-title">候选可执行文件</div>';
+          html += k.candidates.map(function (x) { return '<div class="diag-line ok">' + esc(x) + '</div>'; }).join('');
+        }
+        diag.innerHTML = html;
+      }
+      return k;
+    } catch (e) {
+      if (st) { st.className = 'kicad-state warn'; st.textContent = '探测失败：' + e.message; }
+      return null;
+    }
+  }
+
+  async function saveKicadPath(path) {
+    try {
+      await api('/api/kicad/config', { method: 'POST', body: { path: path || '' } });
+      await loadKicad(false);
+      toast(path ? 'KiCad 路径已保存并立即生效' : '已清除手动路径，恢复自动探测');
+    } catch (e) {
+      toast('保存失败：' + e.message, true);
+    }
+  }
+
+  async function browseKicad() {
+    try {
+      var apiObj = window.pywebview && window.pywebview.api;
+      if (apiObj && apiObj.pick_kicad_exe) {
+        var p = await apiObj.pick_kicad_exe();
+        if (p) { $('#setKicadPath').value = p; toast('已选择：' + p); }
+      } else {
+        toast('浏览器模式拿不到本地绝对路径，请手动粘贴 kicad.exe 完整路径', true);
+        $('#setKicadPath').focus();
+      }
+    } catch (e) {
+      toast('打开文件对话框失败：' + e.message, true);
+    }
+  }
+
   /* ------------------------------------------------------------- 状态栏 */
   async function loadStatus() {
     try {
@@ -667,8 +745,7 @@
       $('#verBadge').textContent = 'v' + (s.version || '2.0');
       var kn = $('#chipNlu');
       if (kn) { kn.classList.add('ok'); kn.querySelector('.chip-txt').textContent = 'NLU · 本地引擎'; }
-      var kc = $('#chipKicad');
-      if (kc) kc.querySelector('.chip-txt').textContent = s.kicad_cli && s.kicad_cli.indexOf('未探测') === 0 ? 'KiCad 导出就绪' : 'KiCad 已就绪';
+      renderKicadChip(s.kicad);
     } catch (e) {
       var c2 = $('#chipLlm'); c2.classList.add('warn'); c2.querySelector('.chip-txt').textContent = '服务连接失败';
     }
@@ -695,7 +772,10 @@
     try {
       var d = await api('/api/open-kicad', { method: 'POST', body: { zip_path: state.result.download_zip } });
       if (d && d.ok) toast('已在 KiCad 中打开工程');
-    } catch (e) { toast(e.message || '未检测到本机 KiCad，请下载工程包后手动打开', true); }
+    } catch (e) {
+      toast(e.message || '未检测到本机 KiCad', true);
+      if (e.message && e.message.indexOf('KiCad') >= 0) openDrawer('settingsDrawer');
+    }
   }
 
   async function applyJson() {
@@ -750,6 +830,7 @@
     $('#btnSettings').onclick = function () { openDrawer('settingsDrawer'); };
     $('#btnHelp').onclick = function () { renderHelp(); openDrawer('helpDrawer'); };
     $('#btnTheme').onclick = function () { applyTheme(state.theme === 'dark' ? 'light' : 'dark'); };
+    $('#chipKicad').onclick = function () { openDrawer('settingsDrawer'); };
 
     // 抽屉关闭
     $('#overlay').onclick = closeDrawers;
@@ -867,6 +948,17 @@
     $('#btnSaveSettings').onclick = saveSettings;
     $('#setAutoPreview').onchange = function () { state.autoPreview = this.checked; };
     $('#setDarkTheme').onchange = function () { applyTheme(this.checked ? 'dark' : 'light'); };
+
+    // KiCad 集成
+    $('#btnSaveKicad').onclick = function () { saveKicadPath($('#setKicadPath').value.trim()); };
+    $('#btnDetectKicad').onclick = function () { loadKicad(true); toast('已重新自动探测'); };
+    $('#btnClearKicad').onclick = function () { $('#setKicadPath').value = ''; saveKicadPath(''); };
+    $('#btnBrowseKicad').onclick = browseKicad;
+    $('#btnToggleKicadDiag').onclick = function () {
+      var d = $('#kicadDiag');
+      d.hidden = !d.hidden;
+      this.textContent = d.hidden ? '查看探测诊断' : '收起探测诊断';
+    };
 
     // 键盘快捷键
     document.addEventListener('keydown', function (e) {

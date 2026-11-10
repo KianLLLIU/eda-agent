@@ -8,6 +8,9 @@
 
 > **v2.0 更新**：新增本地 NLU 引擎（意图分类 + 实体抽取 + 同义词词典）、统一对话入口与多轮会话、
 > 大幅扩充的交互面板，以及**可下载安装的 Windows 桌面应用**（原生窗口 + 安装包 + CI 自动发布）。
+>
+> **v2.0.1 修复**：重写 KiCad 安装探测（手动路径 → 注册表卸载项 → 常见目录/各盘符 → 快捷方式 → PATH），
+> 解决「KiCad 装在自定义目录时检测不到」的问题；设置面板可手动指定路径、查看探测诊断。
 > [桌面版下载与使用说明 →](docs/DESKTOP-INSTALL.md)
 
 ## ✨ 功能特性
@@ -67,7 +70,7 @@
 
 ### 方式一：桌面应用（推荐，无需 Python）
 
-去仓库 **Releases** 下载 `EDA-Agent-Setup-v2.0.0.exe` 双击安装，或下载 `EDA-Agent.exe` 免安装直接双击。
+去仓库 **Releases** 下载 `EDA-Agent-Setup-v2.0.1.exe` 双击安装，或下载 `EDA-Agent.exe` 免安装直接双击。
 安装后有开始菜单 / 桌面快捷方式，卸载走控制面板。完整说明见 [桌面版安装指南](docs/DESKTOP-INSTALL.md)。
 
 自己构建：
@@ -75,7 +78,7 @@
 ```powershell
 pip install -r requirements-desktop.txt
 powershell -ExecutionPolicy Bypass -File scripts\build_desktop.ps1
-# 产物：dist\EDA-Agent.exe 与 dist\installer\EDA-Agent-Setup-v2.0.0.exe
+# 产物：dist\EDA-Agent.exe 与 dist\installer\EDA-Agent-Setup-v2.0.1.exe
 ```
 
 推一个 `v*` 标签即可让 GitHub Actions 自动构建安装包并发布 Release。
@@ -192,6 +195,8 @@ eda-agent/
 | POST | `/api/export` | 单份导出 BOM / 网表 / 报告 / JSON / 完整报告 |
 | POST | `/api/design-from-json` | 编辑后的设计 JSON → 重新生成工程 |
 | POST | `/api/open-folder` · GET `/api/file` | 打开输出目录 · 下载单个文件 |
+| GET | `/api/kicad` | KiCad 探测详情（路径 / 版本 / 来源 / 检查过的位置） |
+| POST | `/api/kicad/detect` · `/api/kicad/config` | 强制重新探测 · 手动指定 kicad.exe 路径 |
 | GET | `/api/app-info` | 桌面端 / 版本 / 路径信息 |
 
 ### v1 兼容接口（全部保留）

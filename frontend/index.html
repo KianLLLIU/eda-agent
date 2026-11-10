@@ -29,7 +29,7 @@
     <div class="status-bar">
       <span class="chip" id="chipLlm"><span class="dot"></span><span class="chip-txt">检测中…</span></span>
       <span class="chip ok" id="chipNlu" title="本地 NLU 引擎"><span class="dot"></span><span class="chip-txt">NLU 就绪</span></span>
-      <span class="chip ok" id="chipKicad"><span class="dot"></span><span class="chip-txt">KiCad 导出</span></span>
+      <span class="chip clickable" id="chipKicad" title="点击查看 / 设置 KiCad 路径"><span class="dot"></span><span class="chip-txt">KiCad 检测中…</span></span>
     </div>
 
     <div class="top-actions">
@@ -272,6 +272,25 @@
       <button class="icon-btn" data-close-drawer="settingsDrawer">✕</button>
     </div>
     <div class="drawer-body">
+      <!-- KiCad 集成：自动探测 + 手动指定路径 + 诊断信息 -->
+      <div class="settings-section">
+        <h3>KiCad 集成</h3>
+        <p class="kicad-state" id="kicadState">检测中…</p>
+        <label class="field-label">kicad.exe 完整路径（留空 = 自动探测）</label>
+        <div class="field-row">
+          <input class="field-input" id="setKicadPath" placeholder="例如 E:\BaiduNetdiskDownload\bin\kicad.exe" autocomplete="off" />
+          <button class="tool-chip" id="btnBrowseKicad" title="浏览选择 kicad.exe">浏览</button>
+        </div>
+        <div class="kicad-actions">
+          <button class="tool-chip primary" id="btnSaveKicad">保存路径</button>
+          <button class="tool-chip" id="btnDetectKicad">重新自动探测</button>
+          <button class="tool-chip" id="btnClearKicad">清除手动路径</button>
+        </div>
+        <button class="text-btn" id="btnToggleKicadDiag">查看探测诊断</button>
+        <div class="kicad-diag" id="kicadDiag" hidden></div>
+        <p class="settings-note">支持自定义安装目录。自动探测顺序：手动路径 → 注册表卸载项 → 常见安装目录与各盘符 → 开始菜单快捷方式 → PATH。不装 KiCad 也能生成并下载完整工程文件。</p>
+      </div>
+
       <div class="settings-section">
         <h3>模型与推理</h3>
         <label class="field-label">API Key（仅保存在内存中，不落盘）</label>

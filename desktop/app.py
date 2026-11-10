@@ -150,6 +150,27 @@ class DesktopApi:
         except Exception as e:  # noqa: BLE001
             return {"ok": False, "error": str(e)}
 
+    def pick_kicad_exe(self):
+        """Native file picker: browsers cannot expose a real absolute path from
+        <input type=file>, so the desktop build uses a real dialog here.
+        Returns the chosen absolute path, or an empty string when cancelled.
+        """
+        try:
+            import webview
+            win = self._window or (webview.windows[0] if webview.windows else None)
+            if win is None:
+                return ""
+            result = win.create_file_dialog(
+                webview.OPEN_DIALOG,
+                allow_multiple=False,
+                file_types=("Executable (*.exe)", "All files (*.*)"),
+            )
+            if not result:
+                return ""
+            return result if isinstance(result, str) else result[0]
+        except Exception:
+            return ""
+
     def quit_app(self):
         try:
             import webview
@@ -207,7 +228,7 @@ def run_desktop(host="127.0.0.1", port=None, debug=False, force_browser=False):
         return 1
 
     print("=" * 60)
-    print("  EDA Agent Desktop  v2.0")
+    print("  EDA Agent Desktop  v2.0.1")
     print("  Local service : %s" % url)
     print("  Mode          : %s" % ("browser fallback" if force_browser else "native window"))
     print("=" * 60)

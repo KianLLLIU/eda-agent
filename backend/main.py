@@ -32,7 +32,7 @@ from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import config
+from . import config, kicad_detect
 from .agent import (
     generate_design_json,
     apply_revision,
@@ -159,12 +159,23 @@ def _status_dict():
         model, base = s["free_model"], s["free_base_url"]
     else:
         model, base = None, None
+    kicad = kicad_detect.detect()
     return {
         "llm_available": client.available,
         "llm_mode": client.mode,
         "llm_model": model,
         "llm_base_url": base,
-        "kicad_cli": config.KICAD_CLI or _find_kicad() or "未探测（本机可能未安装 KiCad，不影响生成原理图文件）",
+        # 兼容 v1 字段：探测到的 exe 路径或友好提示
+        "kicad_cli": kicad["path"] or "未探测（本机可能未安装 KiCad，不影响生成原理图文件）",
+        # v2.0.1：结构化探测结果，供状态栏与设置面板展示
+        "kicad": {
+            "found": kicad["found"],
+            "path": kicad["path"],
+            "version": kicad["version"],
+            "source": kicad["source"],
+            "checked_count": kicad["checked_count"],
+            "hint": kicad["hint"],
+        },
         "version": config.APP_VERSION,
         "frozen": config.IS_FROZEN,
         "platform": platform.system(),
@@ -220,21 +231,11 @@ def assemble_result(design: dict, requirement: str, mode: str,
 
 
 def _find_kicad():
-    """探测本机 KiCad 可执行文件路径"""
-    candidates = []
-    base = r"C:\Program Files\KiCad"
-    if os.path.isdir(base):
-        for ver in os.listdir(base):
-            for exe in ("kicad.exe", "eeschema.exe"):
-                p = os.path.join(base, ver, "bin", exe)
-                if os.path.isfile(p):
-                    candidates.append(p)
-    import shutil
-    for exe in ("kicad", "eeschema"):
-        found = shutil.which(exe)
-        if found:
-            candidates.append(found)
-    return candidates[0] if candidates else None
+    """兼容旧调用：委托给多策略探测器，返回可执行文件路径或 None。
+
+    v2.0.1 起不再只查 C:\\Program Files\\KiCad，详见 backend/kicad_detect.py。
+    """
+    return kicad_detect.detect()["path"]
 
 
 def _open_in_os(path: str):
@@ -325,9 +326,13 @@ def download(path: str):
 def open_kicad(req: OpenKicadRequest):
     """解压工程 zip，并用本机 KiCad 打开 .kicad_pro"""
     full = _safe_path(req.zip_path)
-    kicad = _find_kicad()
+    info = kicad_detect.detect()
+    kicad = info["path"]
     if not kicad:
-        raise HTTPException(status_code=400, detail="未检测到本机 KiCad，请下载工程包后手动打开")
+        raise HTTPException(
+            status_code=400,
+            detail="未检测到本机 KiCad（已检查 %d 处）。%s" % (info["checked_count"], info["hint"]),
+        )
 
     extract_dir = os.path.splitext(full)[0] + "_opened"
     os.makedirs(extract_dir, exist_ok=True)
@@ -627,6 +632,37 @@ def open_folder(data: dict | None = None):
         return {"ok": True, "path": full}
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=f"打开目录失败: {e}") from e
+
+
+# ---------------------------------------------------------------------------
+# 四、v2.0.1 新增：KiCad 安装探测与手动配置
+# ---------------------------------------------------------------------------
+@app.get("/api/kicad")
+def kicad_info():
+    """KiCad 探测详情：路径 / 版本 / 来源 / 检查过的位置 / 建议"""
+    return kicad_detect.detect()
+
+
+@app.post("/api/kicad/detect")
+def kicad_redetect():
+    """强制重新探测（绕过 30 秒缓存）"""
+    return kicad_detect.detect(force=True)
+
+
+@app.post("/api/kicad/config")
+def kicad_set_path(data: dict):
+    """手动指定 kicad.exe 路径或安装目录；传空字符串表示恢复自动探测。
+
+    路径会持久化到 ~/.eda-agent/settings.json，重启后依然生效。
+    """
+    raw = str((data or {}).get("path", "")).strip()
+    normalized = kicad_detect.normalize_manual(raw) if raw else ""
+    if normalized and not os.path.isfile(normalized):
+        raise HTTPException(status_code=400, detail="路径不存在或不是文件：%s" % normalized)
+    config.RUNTIME["kicad_path"] = normalized
+    config.apply_settings({"kicad_path": normalized})
+    kicad_detect.invalidate()
+    return kicad_detect.detect(force=True)
 
 
 @app.get("/api/app-info")

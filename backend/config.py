@@ -31,7 +31,7 @@ OUTPUT_DIR = os.environ.get("EDA_AGENT_OUTPUT", DEFAULT_OUTPUT)
 USER_DATA_DIR = os.environ.get("EDA_AGENT_DATA", os.path.join(os.path.expanduser("~"), ".eda-agent"))
 
 APP_NAME = "EDA Agent"
-APP_VERSION = "2.0.0"
+APP_VERSION = "2.0.1"
 IS_FROZEN = _is_frozen()
 
 # ---------------------------------------------------------------------------
@@ -40,7 +40,8 @@ IS_FROZEN = _is_frozen()
 RUNTIME: dict = {}
 _SETTINGS_FILE = os.path.join(USER_DATA_DIR, "settings.json")
 # 允许持久化到磁盘的非敏感项；API Key 只保留在内存中，不落盘
-PERSISTENT_KEYS = ("base_url", "model", "no_free_llm", "timeout", "auto_preview", "theme")
+PERSISTENT_KEYS = ("base_url", "model", "no_free_llm", "timeout",
+                   "auto_preview", "theme", "kicad_path")
 
 
 def _load_settings():
@@ -58,7 +59,8 @@ def _load_settings():
 
 def apply_settings(data: dict) -> dict:
     """应用前端设置，返回当前生效配置（脱敏）"""
-    for key in ("api_key", "base_url", "model", "timeout", "no_free_llm", "auto_preview", "theme"):
+    for key in ("api_key", "base_url", "model", "timeout", "no_free_llm",
+                "auto_preview", "theme", "kicad_path"):
         if key in data and data[key] is not None:
             RUNTIME[key] = data[key]
     try:
@@ -83,6 +85,7 @@ def public_settings() -> dict:
         "free_llm_model": FREE_LLM_MODEL,
         "auto_preview": RUNTIME.get("auto_preview", True),
         "theme": RUNTIME.get("theme", "light"),
+        "kicad_path": RUNTIME.get("kicad_path", ""),
         "output_dir": OUTPUT_DIR,
         "data_dir": USER_DATA_DIR,
         "frozen": IS_FROZEN,
