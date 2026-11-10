@@ -1,0 +1,13 @@
+# EDA Agent 桌面版构建依赖（在 requirements.txt 之上追加）
+-r requirements.txt
+
+# 单文件 exe 打包
+pyinstaller>=6.11.0
+
+# 原生窗口外壳（Windows 使用系统 WebView2）
+# 若这两项安装失败，程序会自动降级为「启动本地服务 + 打开默认浏览器」，功能不受影响
+pywebview>=5.0
+pythonnet>=3.0.3; sys_platform == "win32"
+
+# 生成应用图标（scripts/make_icon.py）
+pillow>=10.0.0

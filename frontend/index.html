@@ -1,16 +1,15 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>EDA Agent · AI 电路设计智能体</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
+  <!-- 桌面端可能完全离线：不依赖外链字体，直接用系统字体栈 -->
   <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/styles-v2.css" />
 </head>
 <body>
-  <!-- 顶栏 -->
+  <!-- ============ 顶栏 ============ -->
   <header class="topbar">
     <div class="brand">
       <div class="logo" aria-hidden="true">
@@ -22,91 +21,127 @@
         </svg>
       </div>
       <div class="brand-text">
-        <span class="brand-name">EDA&nbsp;Agent</span>
-        <span class="brand-sub">AI 电路设计智能体</span>
+        <span class="brand-name">EDA&nbsp;Agent <span class="ver-badge" id="verBadge">v2.0</span></span>
+        <span class="brand-sub">AI 电路设计智能体 · 桌面工作台</span>
       </div>
     </div>
+
     <div class="status-bar">
       <span class="chip" id="chipLlm"><span class="dot"></span><span class="chip-txt">检测中…</span></span>
-      <span class="chip ok" id="chipKicad"><span class="dot"></span><span class="chip-txt">KiCad 导出就绪</span></span>
+      <span class="chip ok" id="chipNlu" title="本地 NLU 引擎"><span class="dot"></span><span class="chip-txt">NLU 就绪</span></span>
+      <span class="chip ok" id="chipKicad"><span class="dot"></span><span class="chip-txt">KiCad 导出</span></span>
+    </div>
+
+    <div class="top-actions">
+      <button class="icon-btn" id="btnNew" title="新建会话 (Ctrl+N)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+      <button class="icon-btn" id="btnHistory" title="历史会话">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>
+      </button>
+      <button class="icon-btn" id="btnTheme" title="切换深浅主题">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      </button>
+      <button class="icon-btn" id="btnSettings" title="设置">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1 1.56V21a2 2 0 0 1-4 0v-.09a1.7 1.7 0 0 0-1.11-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1H3a2 2 0 0 1 0-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.88l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.56V3a2 2 0 0 1 4 0v.09a1.7 1.7 0 0 0 1 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9v.09a1.7 1.7 0 0 0 1.56 1H21a2 2 0 0 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1.71z"/></svg>
+      </button>
+      <button class="icon-btn" id="btnHelp" title="能力清单 / 关于">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9a2.5 2.5 0 1 1 3.4 2.3c-.8.4-1 1-1 1.7"/><path d="M12 17h.01"/></svg>
+      </button>
     </div>
   </header>
 
   <main class="layout">
-    <!-- 左栏：配置 + 聊天助手 -->
+    <!-- ============ 左栏 ============ -->
     <aside class="panel-left">
-      <!-- 难度选择 -->
+
+      <!-- 快捷指令 -->
       <section class="card config-card">
         <div class="card-head">
-          <h2 class="card-title">电路难度</h2>
+          <h2 class="card-title">快捷指令</h2>
+          <button class="text-btn" id="quickToggle">收起</button>
         </div>
-        <div class="seg-group" id="difficultyGroup">
-          <button class="seg" data-difficulty="beginner">
-            <span class="seg-label">入门</span>
-            <span class="seg-desc">简单电路 · 3~6 元件</span>
-          </button>
-          <button class="seg active" data-difficulty="intermediate">
-            <span class="seg-label">进阶</span>
-            <span class="seg-desc">完整功能 · 8~16 元件</span>
-          </button>
-          <button class="seg" data-difficulty="advanced">
-            <span class="seg-label">挑战</span>
-            <span class="seg-desc">完整系统 · 多模块</span>
-          </button>
+        <div class="quick-tabs" id="quickTabs"></div>
+        <div class="quick-list" id="quickList"></div>
+      </section>
+
+      <!-- 模板库 -->
+      <section class="card config-card">
+        <div class="card-head">
+          <h2 class="card-title">离线模板库</h2>
+          <span class="card-hint">点击直接套用</span>
+        </div>
+        <div class="template-list" id="templateList"></div>
+      </section>
+
+      <!-- 生成参数 -->
+      <section class="card config-card">
+        <div class="card-head">
+          <h2 class="card-title">生成参数</h2>
+          <button class="text-btn" id="paramToggle">展开</button>
+        </div>
+        <div class="param-body" id="paramBody" hidden>
+          <label class="field-label">电路难度</label>
+          <div class="seg-group compact" id="difficultyGroup">
+            <button class="seg" data-difficulty="beginner"><span class="seg-label">入门</span><span class="seg-desc">3~6 元件</span></button>
+            <button class="seg active" data-difficulty="intermediate"><span class="seg-label">进阶</span><span class="seg-desc">8~16 元件</span></button>
+            <button class="seg" data-difficulty="advanced"><span class="seg-label">挑战</span><span class="seg-desc">多模块系统</span></button>
+          </div>
+          <label class="field-label" style="margin-top:12px">电路板风格</label>
+          <div class="style-group" id="styleGroup">
+            <button class="style-opt active" data-style="classic"><span class="swatch" style="--c:#0E7A46"></span><span class="style-name">经典绿</span></button>
+            <button class="style-opt" data-style="minimal"><span class="swatch" style="--c:#3B3B3B"></span><span class="style-name">现代极简</span></button>
+            <button class="style-opt" data-style="retro"><span class="swatch" style="--c:#C0843C"></span><span class="style-name">复古暖铜</span></button>
+          </div>
+          <label class="field-label" style="margin-top:12px">工程名（可选）</label>
+          <input class="field-input" id="projectName" placeholder="留空则按电路标题自动生成" autocomplete="off" />
+          <label class="checkbox-row">
+            <input type="checkbox" id="forceOffline" /> <span>强制离线模板（不使用 LLM）</span>
+          </label>
         </div>
       </section>
 
-      <!-- 风格选择 -->
-      <section class="card config-card">
-        <div class="card-head">
-          <h2 class="card-title">电路板风格</h2>
-        </div>
-        <div class="style-group" id="styleGroup">
-          <button class="style-opt active" data-style="classic">
-            <span class="swatch" style="--c:#0E7A46"></span>
-            <span class="style-name">经典绿</span>
-          </button>
-          <button class="style-opt" data-style="minimal">
-            <span class="swatch" style="--c:#3B3B3B"></span>
-            <span class="style-name">现代极简</span>
-          </button>
-          <button class="style-opt" data-style="retro">
-            <span class="swatch" style="--c:#C0843C"></span>
-            <span class="style-name">复古暖铜</span>
-          </button>
-        </div>
-      </section>
-
-      <!-- 聊天助手 -->
+      <!-- 智能助手 -->
       <section class="card chat-card">
         <div class="card-head">
-          <h2 class="card-title">智能助手</h2>
-          <span class="card-hint">对话式设计</span>
-        </div>
-        <div class="chat-messages" id="chatMessages">
-          <div class="msg assistant">
-            <div class="avatar">W</div>
-            <div class="bubble">
-              你好，我是你的电路设计助手。描述你想实现的电路，我会提取关键词并生成原理图；生成后你还可以直接说「把电容换成 100nF」这类修改。
-            </div>
+          <h2 class="card-title">智能助手 <span class="assistant-name">W</span></h2>
+          <div class="chat-head-actions">
+            <button class="text-btn" id="btnExportChat" title="导出对话记录">导出对话</button>
+            <button class="text-btn" id="btnClearChat" title="清空当前对话">清空</button>
           </div>
         </div>
-        <div class="keyword-chips" id="keywordChips"></div>
-        <div class="chat-input">
-          <input type="text" id="chatInput" placeholder="描述电路需求，或输入修改指令…" autocomplete="off" />
+
+        <div class="chat-messages" id="chatMessages"></div>
+
+        <!-- 实时 NLU 理解预览 -->
+        <div class="insight-bar" id="insightBar" hidden>
+          <div class="insight-head">
+            <span class="insight-badge" id="insightIntent">生成电路</span>
+            <span class="insight-conf"><span class="conf-track"><span class="conf-fill" id="confFill"></span></span><span id="confText">—</span></span>
+          </div>
+          <div class="insight-chips" id="insightChips"></div>
+          <div class="insight-summary" id="insightSummary"></div>
+          <div class="insight-clarify" id="insightClarify" hidden></div>
+        </div>
+
+        <!-- 建议 chips -->
+        <div class="suggestion-row" id="suggestionRow"></div>
+
+        <div class="chat-input-wrap">
+          <textarea id="chatInput" rows="2" placeholder="描述电路需求，或输入修改指令…  (Enter 发送 / Shift+Enter 换行)" autocomplete="off"></textarea>
           <button class="send-btn" id="sendBtn" aria-label="发送">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           </button>
         </div>
         <div class="chat-actions">
           <span class="hint-text" id="hintText">输入需求后回车发送</span>
+          <span class="kbd-hint">Ctrl+K 聚焦 · / 指令</span>
         </div>
       </section>
     </aside>
 
-    <!-- 右栏：实时构图 + 结果 -->
+    <!-- ============ 右栏 ============ -->
     <section class="panel-right">
-      <!-- 进度步骤 -->
       <div class="pipeline" id="pipeline">
         <div class="step" data-step="1"><span class="step-dot"></span><span class="step-name">需求解析</span></div>
         <div class="step" data-step="2"><span class="step-dot"></span><span class="step-name">选型 BOM</span></div>
@@ -115,8 +150,22 @@
         <div class="step" data-step="5"><span class="step-dot"></span><span class="step-name">报告产出</span></div>
       </div>
 
-      <!-- 实时构图舞台 -->
+      <!-- 构图舞台 -->
       <div class="schematic-stage" id="schematicStage">
+        <div class="stage-toolbar">
+          <div class="tool-group">
+            <button class="tool-btn" id="zoomOut" title="缩小">−</button>
+            <span class="zoom-label" id="zoomLabel">100%</span>
+            <button class="tool-btn" id="zoomIn" title="放大">+</button>
+            <button class="tool-btn" id="zoomFit" title="适应窗口">适应</button>
+          </div>
+          <div class="tool-group">
+            <button class="tool-btn" id="btnFullscreen" title="全屏查看">全屏</button>
+            <button class="tool-btn" id="btnDownloadSvg" title="下载 SVG 原理图">下载 SVG</button>
+            <button class="tool-btn" id="replayBtn" title="重播构图动画">重播</button>
+          </div>
+        </div>
+
         <div class="stage-empty" id="stageEmpty">
           <div class="empty-graphic" aria-hidden="true">
             <svg viewBox="0 0 120 90" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -124,25 +173,29 @@
               <rect x="30" y="14" width="12" height="10" rx="2"/>
               <rect x="70" y="30" width="40" height="20" rx="3"/>
               <circle cx="90" cy="55" r="5"/>
-              <path d="M10 35h46M10 45h46M70 40h40"/>
-              <path d="M56 35h14M56 45h14"/>
+              <path d="M10 35h46M10 45h46M70 40h40"/><path d="M56 35h14M56 45h14"/>
             </svg>
           </div>
           <p class="empty-title">等待生成电路</p>
-          <p class="empty-sub">在左侧描述需求，这里会实时展示电路构图过程</p>
+          <p class="empty-sub">在左侧描述需求，或点一张快捷卡片 / 模板开始</p>
         </div>
-        <div class="stage-svg" id="stageSvg" hidden></div>
+
+        <div class="stage-viewport" id="stageViewport">
+          <div class="stage-svg" id="stageSvg" hidden></div>
+        </div>
+
         <div class="stage-badge" id="stageBadge" hidden>
-          <span class="badge-dot"></span>
-          <span id="stageBadgeText">构图进行中…</span>
+          <span class="badge-dot"></span><span id="stageBadgeText">构图进行中…</span>
         </div>
-        <button class="replay-btn" id="replayBtn" hidden>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5"/></svg>
-          重播构图
-        </button>
+
+        <div class="stage-styles" id="stageStyles">
+          <button class="mini-swatch active" data-style="classic" style="--c:#0E7A46" title="经典绿"></button>
+          <button class="mini-swatch" data-style="minimal" style="--c:#3B3B3B" title="现代极简"></button>
+          <button class="mini-swatch" data-style="retro" style="--c:#C0843C" title="复古暖铜"></button>
+        </div>
       </div>
 
-      <!-- 结果标签页 -->
+      <!-- 结果面板 -->
       <div class="result-panel" id="resultPanel" hidden>
         <div class="result-head">
           <div class="result-info">
@@ -154,30 +207,110 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
               下载 KiCad 工程
             </a>
-            <button class="btn-outline" id="btnOpenKicad" title="用本机 KiCad 打开工程">
-              用 KiCad 打开
-            </button>
+            <button class="btn-outline" id="btnOpenKicad" title="用本机 KiCad 打开工程">用 KiCad 打开</button>
           </div>
         </div>
+
+        <div class="result-toolbar" id="resultToolbar">
+          <button class="tool-chip" data-export="bom">↓ BOM.md</button>
+          <button class="tool-chip" data-export="netlist">↓ NETLIST.md</button>
+          <button class="tool-chip" data-export="design">↓ design.json</button>
+          <button class="tool-chip" data-export="all">↓ 完整报告</button>
+          <span class="toolbar-sep"></span>
+          <button class="tool-chip" id="btnCopyMd">复制 BOM</button>
+          <button class="tool-chip" id="btnOpenFolder">打开输出目录</button>
+          <button class="tool-chip" id="btnPrint">打印 / PDF</button>
+        </div>
+
         <div class="tabs" id="tabs">
           <button class="tab active" data-tab="bom">BOM 清单</button>
           <button class="tab" data-tab="netlist">网表连接</button>
           <button class="tab" data-tab="report">工作汇报</button>
           <button class="tab" data-tab="guide">操作指南</button>
           <button class="tab" data-tab="hardware">硬件需求</button>
+          <button class="tab" data-tab="json">设计 JSON</button>
         </div>
+
         <div class="tab-panels">
           <div class="panel active" id="panel-bom"></div>
           <div class="panel" id="panel-netlist"></div>
           <div class="panel" id="panel-report"></div>
           <div class="panel" id="panel-guide"></div>
           <div class="panel" id="panel-hardware"></div>
+          <div class="panel json-panel" id="panel-json">
+            <div class="json-tools">
+              <span class="json-hint">可直接编辑元件参数 / 网络，点「应用修改」重新生成工程与原理图</span>
+              <div>
+                <button class="tool-chip" id="btnFormatJson">格式化</button>
+                <button class="tool-chip primary" id="btnApplyJson">应用修改</button>
+              </div>
+            </div>
+            <textarea class="json-editor" id="jsonEditor" spellcheck="false"></textarea>
+          </div>
         </div>
       </div>
     </section>
   </main>
 
+  <!-- ============ 抽屉 / 弹层 ============ -->
+  <div class="overlay" id="overlay" hidden></div>
+
+  <aside class="drawer" id="historyDrawer" hidden>
+    <div class="drawer-head">
+      <h2>历史会话</h2>
+      <button class="icon-btn" data-close-drawer="historyDrawer">✕</button>
+    </div>
+    <div class="drawer-body" id="historyList"></div>
+    <div class="drawer-foot">
+      <button class="btn-outline danger" id="btnClearHistory">清空全部会话</button>
+    </div>
+  </aside>
+
+  <aside class="drawer" id="settingsDrawer" hidden>
+    <div class="drawer-head">
+      <h2>设置</h2>
+      <button class="icon-btn" data-close-drawer="settingsDrawer">✕</button>
+    </div>
+    <div class="drawer-body">
+      <div class="settings-section">
+        <h3>模型与推理</h3>
+        <label class="field-label">API Key（仅保存在内存中，不落盘）</label>
+        <input class="field-input" id="setApiKey" type="password" placeholder="留空则使用免费在线 LLM" autocomplete="off" />
+        <label class="field-label">接口地址 (Base URL)</label>
+        <input class="field-input" id="setBaseUrl" placeholder="https://api.deepseek.com/v1" autocomplete="off" />
+        <label class="field-label">模型名称</label>
+        <input class="field-input" id="setModel" placeholder="deepseek-chat" autocomplete="off" />
+        <label class="field-label">请求超时（秒）</label>
+        <input class="field-input" id="setTimeout" type="number" min="5" max="300" value="60" />
+        <label class="checkbox-row"><input type="checkbox" id="setNoFree" /> <span>关闭免费在线 LLM（纯离线模板）</span></label>
+        <button class="btn-primary" id="btnSaveSettings">保存设置</button>
+        <p class="settings-note" id="settingsNote"></p>
+      </div>
+      <div class="settings-section">
+        <h3>界面</h3>
+        <label class="checkbox-row"><input type="checkbox" id="setAutoPreview" checked /> <span>输入时实时解析意图与关键词</span></label>
+        <label class="checkbox-row"><input type="checkbox" id="setDarkTheme" /> <span>深色主题</span></label>
+      </div>
+      <div class="settings-section">
+        <h3>路径信息</h3>
+        <p class="path-line"><b>输出目录</b><span id="pathOutput">—</span></p>
+        <p class="path-line"><b>数据目录</b><span id="pathData">—</span></p>
+        <p class="path-line"><b>运行模式</b><span id="pathMode">—</span></p>
+        <p class="settings-note">桌面版的数据保存在用户主目录，卸载时可自行清理。</p>
+      </div>
+    </div>
+  </aside>
+
+  <aside class="drawer wide" id="helpDrawer" hidden>
+    <div class="drawer-head">
+      <h2>能力清单 · 关于</h2>
+      <button class="icon-btn" data-close-drawer="helpDrawer">✕</button>
+    </div>
+    <div class="drawer-body" id="helpBody"></div>
+  </aside>
+
   <div class="toast" id="toast"></div>
+
   <script src="/app.js"></script>
 </body>
 </html>

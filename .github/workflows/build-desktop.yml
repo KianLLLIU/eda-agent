@@ -1,0 +1,80 @@
+name: Build Desktop App
+
+# Builds a real Windows installer and publishes it to GitHub Releases.
+# Trigger manually from the Actions tab, or push a tag like v2.0.0.
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install pyinstaller pillow pywebview pythonnet
+
+      - name: Generate application icon
+        run: python scripts/make_icon.py
+
+      - name: Build portable executable
+        run: python -m PyInstaller --clean -y packaging/eda_agent_desktop.spec
+
+      - name: Compile Inno Setup installer
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist/installer | Out-Null
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (Test-Path $iscc) {
+            & $iscc "installer\EDA-Agent.iss"
+            if ($LASTEXITCODE -ne 0) { throw "ISCC failed with $LASTEXITCODE" }
+          } else {
+            Write-Host "::warning::ISCC.exe not found - installer step skipped, portable exe still built."
+          }
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: EDA-Agent-Windows
+          path: |
+            dist/EDA-Agent.exe
+            dist/installer/*.exe
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: EDA Agent ${{ github.ref_name }} - Desktop
+          body: |
+            ## EDA Agent Desktop ${{ github.ref_name }}
+
+            **Downloads (Windows x64)**
+            - `EDA-Agent-Setup-*.exe` - recommended installer (Start Menu / desktop shortcut / uninstaller)
+            - `EDA-Agent.exe` - portable single file, double-click to run, no install needed
+
+            Requires Windows 10/11. WebView2 is built into most systems;
+            without it the app automatically opens in your default browser.
+            No Python, no API key and no internet connection required to generate circuits.
+          files: |
+            dist/EDA-Agent.exe
+            dist/installer/*.exe
+          generate_release_notes: true
+          draft: false

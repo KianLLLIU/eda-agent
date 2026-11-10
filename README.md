@@ -6,17 +6,36 @@
 
 ---
 
+> **v2.0 更新**：新增本地 NLU 引擎（意图分类 + 实体抽取 + 同义词词典）、统一对话入口与多轮会话、
+> 大幅扩充的交互面板，以及**可下载安装的 Windows 桌面应用**（原生窗口 + 安装包 + CI 自动发布）。
+> [桌面版下载与使用说明 →](docs/DESKTOP-INSTALL.md)
+
 ## ✨ 功能特性
 
-- **自然语言 → BOM / 网表**：设计 Prompt，让 LLM 从一句话需求生成元器件清单与引脚级连接（结构化 JSON）
-- **JSON → KiCad 原理图**：用 Python 脚本把 JSON 变成真实可打开的 `.kicad_sch` / `.kicad_pcb` / `.kicad_pro`
-- **智能聊天助手**：对话式设计，自动提取需求关键词，支持「把电容换成 100nF」这类修改指令实时改图
-- **难度 / 风格选择**：入门 / 进阶 / 挑战三档复杂度；经典绿 / 现代极简 / 复古暖铜三种电路板风格
-- **实时构图画面**：生成时实时展示电路「元件逐个摆放、连线逐条连接」的动画过程
-- **一键打开 KiCad**：生成后可直接唤起本机 KiCad 打开工程
-- **三级能力降级**：自定义 LLM Key → 免费在线 LLM（BlockRun 开源模型，无需 key）→ 离线模板，**任何环境都能跑通**
+### Agent 与对话助手
+- **本地 NLU 引擎**：10 类意图加权分类（生成 / 修改 / 解释 / 导出 / 模板 / 帮助 / 状态 / 重绘 / 新建 …），
+  40+ 组电路术语同义词词典，中英文混输、简写别名、拼写容错，输出带类别与置信度的结构化理解
+- **实体抽取**：自动识别元件编号（C1 / R2）、参数值（100nF / 330Ω / 3.3V / 16MHz）、数量、动作动词与接口
+- **理解结果注入 Prompt**：把预解析结果交给 LLM，显著降低参数幻觉；输入时前端实时预览识别结果
+- **有信息量的助手**：动态欢迎语、完整能力档案、上下文记忆、识别结果回显、主动澄清与下一步建议
+- **离线也能改图**：「把 C1 换成 100nF」「增加一组 100nF 去耦电容」由本地规则引擎执行，不依赖 LLM
+- **电路原理解释**：基于真实 design JSON 讲解模块划分、器件作用、网络走向与供电路径
+- **多轮会话持久化**：会话历史保存 / 切换 / 删除，桌面端重启自动恢复上次设计
+
+### 设计与工程
+- **自然语言 → BOM / 网表**：结构化 JSON 约束 + 符号目录，生成元器件清单与引脚级连接
+- **JSON → KiCad 原理图**：生成真实可打开的 `.kicad_sch` / `.kicad_pcb` / `.kicad_pro`
+- **加权模板匹配**：3 套离线模板按语义打分选型，替代原先「首个关键词命中」
+- **三级能力降级**：自定义 LLM Key → 免费在线 LLM → 离线模板，**任何环境都能跑通**
 - **自动产出三份报告**：工作汇报、操作指南、硬件需求清单
-- **浅色精致界面**：浅色设计系统，流畅微交互
+
+### 交互与桌面端
+- **可下载安装的桌面应用**：原生窗口（WebView2）、Inno Setup 安装包、桌面 / 开始菜单快捷方式、可卸载；
+  另有免安装单文件 exe；GitHub Actions 自动构建并发布到 Releases
+- **丰富交互**：快捷指令卡片、模板库、实时理解预览、建议 chips、消息复制 / 重发、斜杠指令与键盘快捷键
+- **舞台工具**：缩放 / 拖拽 / 适应 / 全屏 / 重播 / 下载 SVG，三种板色实时重绘
+- **结果工作台**：6 个标签页（含**可编辑的设计 JSON**）、单份导出、复制、打开输出目录、打印 PDF、唤起 KiCad
+- **设置与主题**：运行时切换 LLM 配置、强制离线、实时解析开关、深浅双主题（本地持久化）
 
 ## 🏗️ 技术架构
 
@@ -44,7 +63,24 @@
 - **LLM**：OpenAI 兼容接口（DeepSeek / OpenAI / 通义千问 / Ollama 等）
 - **前端**：原生 HTML/CSS/JS（无构建依赖，单进程托管）
 
-## 🚀 快速开始（5 分钟跑通）
+## 🚀 快速开始
+
+### 方式一：桌面应用（推荐，无需 Python）
+
+去仓库 **Releases** 下载 `EDA-Agent-Setup-v2.0.0.exe` 双击安装，或下载 `EDA-Agent.exe` 免安装直接双击。
+安装后有开始菜单 / 桌面快捷方式，卸载走控制面板。完整说明见 [桌面版安装指南](docs/DESKTOP-INSTALL.md)。
+
+自己构建：
+
+```powershell
+pip install -r requirements-desktop.txt
+powershell -ExecutionPolicy Bypass -File scripts\build_desktop.ps1
+# 产物：dist\EDA-Agent.exe 与 dist\installer\EDA-Agent-Setup-v2.0.0.exe
+```
+
+推一个 `v*` 标签即可让 GitHub Actions 自动构建安装包并发布 Release。
+
+### 方式二：源码运行（5 分钟跑通）
 
 ### 环境要求
 
@@ -99,39 +135,76 @@ export EDA_AGENT_MODEL="deepseek-chat"
 
 ```
 eda-agent/
-├── run.py                 # 启动入口
-├── requirements.txt       # 依赖
+├── run.py                          # 网页版启动入口（浏览器）
+├── desktop_launcher.py             # 桌面版启动入口（PyInstaller 入口点）
+├── requirements.txt                # 运行依赖
+├── requirements-desktop.txt        # 桌面构建依赖
 ├── backend/
-│   ├── main.py            # FastAPI 服务（REST API + 静态托管）
-│   ├── config.py          # 全局配置（环境变量）
-│   ├── agent/             # Agent 编排层
-│   │   ├── llm.py         #   LLM 客户端（OpenAI 兼容）
-│   │   ├── prompts.py     #   Prompt 设计（符号目录约束 + few-shot）
-│   │   ├── validator.py   #   JSON 校验兜底
-│   │   └── pipeline.py    #   编排管线（NL → JSON → 文件）
-│   ├── kicad_gen/         # KiCad 生成器（自研）
-│   │   ├── symbols.py     #   符号库（数据驱动）
-│   │   ├── schematic.py   #   JSON → .kicad_sch
-│   │   ├── pcb.py         #   JSON → .kicad_pcb
-│   │   ├── project.py     #   .kicad_pro + 库表
-│   │   └── bom.py         #   BOM / 网表导出
-│   ├── reports/           # 报告生成器（工作汇报/操作指南/硬件需求）
-│   └── templates/         # 内置离线模板
-├── frontend/              # 交互界面（原生三件套）
-├── docs/                  # 设计报告 / 操作指南 / 硬件需求 / 工作总结
-├── packaging/             # PyInstaller 打包配置
-└── docker/                # 网站版容器化部署
+│   ├── main.py                     # FastAPI 服务（REST API + 静态托管）
+│   ├── config.py                   # 配置（环境变量 + 运行时设置 + 桌面路径）
+│   ├── agent/
+│   │   ├── nlu.py                  # ★ NLU 引擎（意图 / 实体 / 词典 / 加权模板）
+│   │   ├── assistant.py            # ★ 对话助手（能力档案 / 会话 / 动态回复 / 电路解释）
+│   │   ├── llm.py                  #   LLM 客户端（OpenAI 兼容，配置热更新）
+│   │   ├── prompts.py              #   Prompt 设计（注入 NLU 理解与会话上下文）
+│   │   ├── validator.py            #   JSON 校验兜底
+│   │   └── pipeline.py             #   编排管线（含离线修订引擎）
+│   ├── kicad_gen/                  # KiCad 生成器（自研，未改动）
+│   ├── reports/                    # 报告生成器
+│   └── templates/                  # 内置离线模板
+├── desktop/
+│   └── app.py                      # ★ 原生窗口外壳 + 本地服务同进程 + 浏览器降级
+├── frontend/
+│   ├── index.html                  # ★ 交互工作台骨架
+│   ├── app.js                      # ★ 全部交互逻辑（统一走 /api/chat）
+│   ├── styles.css                  # 基础设计系统
+│   └── styles-v2.css               # ★ 新组件 + 深色主题
+├── packaging/
+│   ├── eda_agent.spec              # 旧版 console 打包（保留兼容）
+│   └── eda_agent_desktop.spec      # ★ 桌面 GUI 单文件打包
+├── installer/
+│   └── EDA-Agent.iss                # ★ Inno Setup 安装脚本
+├── scripts/
+│   ├── build_desktop.ps1           # ★ 一键构建（exe + 安装包）
+│   ├── make_icon.py                # ★ 图标生成
+│   └── build_exe.*                 # 旧版构建脚本
+├── assets/                         # ★ 应用图标 ico / png
+├── .github/workflows/
+│   └── build-desktop.yml           # ★ CI 自动构建 + Release 发布
+├── docs/                           # 设计报告 / 安装指南 / 演示脚本
+└── docker/                         # 网页版容器化部署
 ```
 
 ## 🔧 API 一览
 
+### v2.0 新增
+
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/api/status` | LLM / KiCad 状态 |
+| POST | `/api/chat` | **统一对话入口**：意图路由 + 上下文 + 动态回复 + 结果一次返回 |
+| POST | `/api/analyze` | 实时 NLU 预览（意图 / 关键词 / 实体 / 置信度 / 澄清） |
+| GET | `/api/capabilities` | 助手能力档案、快捷指令、模板库、动态欢迎语 |
+| GET / POST | `/api/templates` / `/api/template` | 离线模板列表与一键套用 |
+| GET | `/api/history` | 会话列表；`/activate` 恢复、`DELETE` 删除 / 清空 |
+| POST | `/api/session/new` | 新建会话 |
+| GET / POST | `/api/settings` | 运行时配置（LLM Key / 模型 / 主题，API Key 不落盘） |
+| POST | `/api/render` | 仅重绘 SVG（切换板色，无需重建工程） |
+| POST | `/api/export` | 单份导出 BOM / 网表 / 报告 / JSON / 完整报告 |
+| POST | `/api/design-from-json` | 编辑后的设计 JSON → 重新生成工程 |
+| POST | `/api/open-folder` · GET `/api/file` | 打开输出目录 · 下载单个文件 |
+| GET | `/api/app-info` | 桌面端 / 版本 / 路径信息 |
+
+### v1 兼容接口（全部保留）
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/health` · `/api/status` | 健康检查 · 运行状态 |
 | POST | `/api/generate` | 自然语言 → 设计 JSON |
 | POST | `/api/build` | 设计 JSON → 工程文件 + 报告 |
-| POST | `/api/design` | 一步到位（上面两步合并） |
-| GET | `/api/download?path=` | 下载生成工程包（zip） |
+| POST | `/api/design` | 一步到位 |
+| POST | `/api/revision` | 对话式修改（LLM 优先，离线规则兜底） |
+| GET | `/api/download?path=` | 下载工程包 zip |
+| POST | `/api/open-kicad` | 唤起本机 KiCad |
 
 交互式 API 文档见 `http://127.0.0.1:8000/docs`。
 

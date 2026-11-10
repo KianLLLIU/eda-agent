@@ -28,7 +28,11 @@ def _symbol_catalog() -> str:
     return "\n".join(lines)
 
 
-SYSTEM_PROMPT = """你是一名资深硬件电路设计工程师，擅长把用户的自然语言需求转换成可制造的标准电路设计。
+SYSTEM_PROMPT = """你是 W，EDA Agent 的电路设计助手，同时也是一名资深硬件电路设计工程师，
+擅长把用户的自然语言需求（中文 / 英文 / 口语 / 简写混合）转换成可制造的标准电路设计。
+
+你具备意图理解、关键词与参数抽取、元器件选型、引脚级网表构建、对话式改图、电路原理解释等能力。
+用户描述可能经过本地 NLU 预解析，请以结构化理解中的参数值（电压、阻值、容值、频率、元件编号）为准。
 
 你的任务：根据用户描述，输出一份**电路设计 JSON**，包含：
 1. 元器件清单（BOM）——从「可用符号表」中选型；
@@ -45,7 +49,13 @@ SYSTEM_PROMPT = """你是一名资深硬件电路设计工程师，擅长把用�
 """
 
 
-def build_user_prompt(requirement: str, difficulty: str = "intermediate") -> str:
+def build_user_prompt(requirement: str, difficulty: str = "intermediate",
+                      understanding: str = "", context: str = "") -> str:
+    """构造用户 Prompt。
+
+    understanding: 本地 NLU 预解析结果（意图 / 关键词 / 参数），用于消除歧义、锁定参数；
+    context:       多轮会话摘要，让模型知道「上一轮改了什么」，避免丢失上下文。
+    """
     catalog = _symbol_catalog()
     schema = {
         "title": "电路名称",
@@ -83,7 +93,11 @@ def build_user_prompt(requirement: str, difficulty: str = "intermediate") -> str
 复杂度要求：
 {difficulty_hint}
 
-用户需求：
+{understanding}
+
+{context}
+
+用户需求（原始描述，优先级低于上面的结构化理解中的参数约束）：
 {requirement}
 
 请输出电路设计 JSON（仅 JSON，不要其它文字）：

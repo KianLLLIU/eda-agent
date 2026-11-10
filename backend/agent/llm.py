@@ -25,21 +25,26 @@ class LLMClient:
     """
 
     def __init__(self, api_key=None, base_url=None, model=None, timeout=None):
-        self.api_key = api_key or config.LLM_API_KEY
-        self.base_url = (base_url or config.LLM_BASE_URL).rstrip("/")
-        self.model = model or config.LLM_MODEL
-        self.timeout = timeout or config.LLM_TIMEOUT
+        # 读动态配置：前端「设置」面板可在不重启的情况下切换模型 / Key / 免费 LLM 开关
+        s = config.llm_settings()
+        self.api_key = api_key or s["api_key"]
+        self.base_url = (base_url or s["base_url"]).rstrip("/")
+        self.model = model or s["model"]
+        self.timeout = timeout or s["timeout"]
+        self.free_enabled = not s["no_free_llm"]
+        self.free_base_url = s["free_base_url"]
+        self.free_model = s["free_model"]
 
     @property
     def available(self) -> bool:
-        return bool(self.api_key) or config.FREE_LLM_ENABLED
+        return bool(self.api_key) or self.free_enabled
 
     @property
     def mode(self) -> str:
         """'custom'（自定义 key）/ 'free'（免费在线 LLM）/ 'none'"""
         if self.api_key:
             return "custom"
-        if config.FREE_LLM_ENABLED:
+        if self.free_enabled:
             return "free"
         return "none"
 
@@ -47,9 +52,9 @@ class LLMClient:
         """调用 chat.completions，返回文本内容。json_mode 时要求模型返回 JSON。"""
         if self.api_key:
             return self._chat_custom(messages, temperature, json_mode)
-        if config.FREE_LLM_ENABLED:
+        if self.free_enabled:
             return self._chat_free(messages, temperature, json_mode, retries)
-        raise LLMError("未配置 LLM（可设置 EDA_AGENT_API_KEY，或确保网络可访问免费在线 LLM）")
+        raise LLMError("未配置 LLM（可在「设置」中填入 API Key，或开启免费在线 LLM）")
 
     def _chat_custom(self, messages, temperature, json_mode):
         payload = {
@@ -85,9 +90,9 @@ class LLMClient:
 
     def _chat_free(self, messages, temperature, json_mode, retries):
         """免费在线 LLM（BlockRun，无需 key），带冷启动重试"""
-        url = f"{config.FREE_LLM_BASE_URL.rstrip('/')}/chat/completions"
+        url = f"{self.free_base_url.rstrip('/')}/chat/completions"
         payload = {
-            "model": config.FREE_LLM_MODEL,
+            "model": self.free_model,
             "messages": messages,
             "temperature": temperature,
             "stream": False,
