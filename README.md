@@ -14,6 +14,10 @@
 >
 > **v2.0.2 修复**：生成的 KiCad 工程文件按 KiCad 9/10 官方格式重写，解决用 KiCad 打开时报
 > `Unknown token 'uuid'` / 原理图加载失败。现已用 KiCad 10.0.7 的 `kicad-cli` 实测通过。
+>
+> **v2.0.3 绘图重做**：统一布局引擎 + SVG 重绘 —— 规整 slot 网格、模块框不重叠、
+> 正交走线（stub → 垂直支线 → 水平主干）、单引脚网络也完整出线、彩色网络名标签、
+> 标题栏/点阵网格/元件卡片，下载地址见 [绘图效果预览](docs/circuit-preview.html)。
 > [桌面版下载与使用说明 →](docs/DESKTOP-INSTALL.md)
 
 ## ✨ 功能特性
@@ -39,6 +43,7 @@
 - **可下载安装的桌面应用**：原生窗口（WebView2）、Inno Setup 安装包、桌面 / 开始菜单快捷方式、可卸载；
   另有免安装单文件 exe；GitHub Actions 自动构建并发布到 Releases
 - **丰富交互**：快捷指令卡片、模板库、实时理解预览、建议 chips、消息复制 / 重发、斜杠指令与键盘快捷键
+- **规整的实时构图**（v2.0.3 重做）：统一布局引擎（slot 网格 + 模块分块 + 自动避让，元件卡片与模块框零重叠），正交走线「引脚 stub → 垂直支线 → 水平主干」，每条网络都完整出线（含单引脚网络）、彩色网络名标签、引脚端点、标题栏与点阵网格；样式内嵌 SVG，下载后独立打开也完整。[效果预览](docs/circuit-preview.html)
 - **舞台工具**：缩放 / 拖拽 / 适应 / 全屏 / 重播 / 下载 SVG，三种板色实时重绘
 - **结果工作台**：6 个标签页（含**可编辑的设计 JSON**）、单份导出、复制、打开输出目录、打印 PDF、唤起 KiCad
 - **设置与主题**：运行时切换 LLM 配置、强制离线、实时解析开关、深浅双主题（本地持久化）
@@ -73,7 +78,7 @@
 
 ### 方式一：桌面应用（推荐，无需 Python）
 
-去仓库 **Releases** 下载 `EDA-Agent-Setup-v2.0.2.exe` 双击安装，或下载 `EDA-Agent.exe` 免安装直接双击。
+去仓库 **Releases** 下载 `EDA-Agent-Setup-v2.0.3.exe` 双击安装，或下载 `EDA-Agent.exe` 免安装直接双击。
 安装后有开始菜单 / 桌面快捷方式，卸载走控制面板。完整说明见 [桌面版安装指南](docs/DESKTOP-INSTALL.md)。
 
 自己构建：
@@ -81,7 +86,7 @@
 ```powershell
 pip install -r requirements-desktop.txt
 powershell -ExecutionPolicy Bypass -File scripts\build_desktop.ps1
-# 产物：dist\EDA-Agent.exe 与 dist\installer\EDA-Agent-Setup-v2.0.2.exe
+# 产物：dist\EDA-Agent.exe 与 dist\installer\EDA-Agent-Setup-v2.0.3.exe
 ```
 
 推一个 `v*` 标签即可让 GitHub Actions 自动构建安装包并发布 Release。
@@ -155,7 +160,11 @@ eda-agent/
 │   │   ├── prompts.py              #   Prompt 设计（注入 NLU 理解与会话上下文）
 │   │   ├── validator.py            #   JSON 校验兜底
 │   │   └── pipeline.py             #   编排管线（含离线修订引擎）
-│   ├── kicad_gen/                  # KiCad 生成器（自研，未改动）
+│   ├── kicad_gen/
+│   │   ├── layout.py               # ★ 统一布局引擎（slot 网格 / 模块框 / 网络通道）
+│   │   ├── render_svg.py           # ★ 实时构图 SVG（正交走线 / 自包含样式）
+│   │   ├── schematic.py            #   JSON → .kicad_sch
+│   │   └── pcb.py / project.py     #   .kicad_pcb / 工程与库表
 │   ├── reports/                    # 报告生成器
 │   └── templates/                  # 内置离线模板
 ├── desktop/
@@ -177,7 +186,7 @@ eda-agent/
 ├── assets/                         # ★ 应用图标 ico / png
 ├── .github/workflows/
 │   └── build-desktop.yml           # ★ CI 自动构建 + Release 发布
-├── docs/                           # 设计报告 / 安装指南 / 演示脚本
+├── docs/                           # 设计报告 / 安装指南 / 演示脚本 / circuit-preview.html（绘图效果预览）
 └── docker/                         # 网页版容器化部署
 ```
 

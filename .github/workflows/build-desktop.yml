@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Publish to an existing release tag (e.g. v2.0.2)'
+        description: 'Publish to an existing release tag (e.g. v2.0.3)'
         required: false
         default: ''
   push:

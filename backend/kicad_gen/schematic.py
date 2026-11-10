@@ -155,65 +155,14 @@ def _module_rect_s(x1, y1, x2, y2, name, lx, ly):
 # 布局
 # ---------------------------------------------------------------------------
 def layout_components(design):
+    """委托给统一布局引擎，保持原有返回签名 (positions, group_order, ref_to_group)。
+
+    v2.0.3：改用规整 slot 网格，模块之间与元件之间都有稳定间距，
+    避免元件/标签挤在一起。原理图用更紧凑的页面参数以落在 A4 内。
     """
-    计算每个元件的放置坐标（模块化布局：一个模块一行，组内横排）。
-    返回 {ref: (cx, cy)}
-    """
-    comps = {c["ref"]: c for c in design["components"]}
-    groups = design.get("groups") or []
-
-    # 构建分组映射
-    ref_to_group = {}
-    group_order = []
-    for g in groups:
-        group_order.append(g["name"])
-        for r in g["refs"]:
-            ref_to_group[r] = g["name"]
-
-    # 未分组的元件归入「其他」匿名组
-    ungrouped = [c["ref"] for c in design["components"] if c["ref"] not in ref_to_group]
-    if ungrouped:
-        group_order.append("其他")
-        for r in ungrouped:
-            ref_to_group[r] = "其他"
-
-    # 按分组顺序重排组件
-    ordered = []
-    for gname in group_order:
-        for c in design["components"]:
-            if ref_to_group.get(c["ref"]) == gname:
-                ordered.append(c)
-
-    positions = {}
-    MARGIN = 7.62
-    ROW_GAP = 12.7
-    x_start = 40.64
-    y_cursor = 40.64
-
-    for gname in group_order:
-        members = [c for c in ordered if ref_to_group.get(c["ref"]) == gname]
-        if not members:
-            continue
-        row_height = 0.0
-        x = x_start
-        # 先算该行最大高度
-        for c in members:
-            sym = get_symbol(f'{c["lib"]}:{c["symbol"]}')
-            if sym is None:
-                continue
-            _, h = symbol_bbox(sym)
-            row_height = max(row_height, h)
-        # 逐元件横排
-        for c in members:
-            sym = get_symbol(f'{c["lib"]}:{c["symbol"]}')
-            if sym is None:
-                continue
-            w, _ = symbol_bbox(sym)
-            positions[c["ref"]] = (snap(x), snap(y_cursor))
-            x += w + MARGIN
-        y_cursor += row_height + ROW_GAP
-
-    return positions, group_order, ref_to_group
+    from .layout import compute_layout
+    lay = compute_layout(design, max_cols=5, title_h=8, group_gap=10)
+    return lay["positions"], lay["group_order"], lay["ref_to_group"]
 
 
 # ---------------------------------------------------------------------------
@@ -301,7 +250,8 @@ def _draw_modules(design, positions, group_order, ref_to_group):
         maxx = max(positions[r][0] for r in members)
         miny = min(positions[r][1] for r in members)
         maxy = max(positions[r][1] for r in members)
-        pad = 6.35
+        # 留出 ref/value 文字空间，避免模块名与元件标签贴在一起
+        pad = 9.0
         x1, y1 = snap(minx - pad), snap(miny - pad)
         x2, y2 = snap(maxx + pad), snap(maxy + pad)
         out += _module_rect_s(x1, y1, x2, y2, gname, x1 + 2.54, y1 - 2.54)

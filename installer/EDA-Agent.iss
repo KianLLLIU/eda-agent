@@ -6,7 +6,7 @@
 ;  or from project root:
 ;    powershell -ExecutionPolicy Bypass -File scripts\build_desktop.ps1
 ;
-;  Output: dist\installer\EDA-Agent-Setup-v2.0.2.exe
+;  Output: dist\installer\EDA-Agent-Setup-v2.0.3.exe
 ;  Installs: Start Menu entry, optional desktop shortcut, uninstaller.
 ;
 ;  NOTE: This file is intentionally pure ASCII. Inno Setup reads .iss files
@@ -17,7 +17,7 @@
 ; ===========================================================================
 
 #define MyAppName "EDA Agent"
-#define MyAppVersion "2.0.2"
+#define MyAppVersion "2.0.3"
 #define MyAppPublisher "KianLLLIU"
 #define MyAppURL "https://github.com/KianLLLIU/eda-agent"
 #define MyAppExeName "EDA-Agent.exe"
