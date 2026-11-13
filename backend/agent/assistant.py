@@ -22,7 +22,7 @@ import uuid
 from .. import config
 from . import nlu
 
-VERSION = "2.0.4"
+VERSION = "2.0.5"
 
 ASSISTANT_PROFILE = {
     "name": "W",

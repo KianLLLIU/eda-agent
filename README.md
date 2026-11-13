@@ -22,7 +22,12 @@
 > **v2.0.4 KiCad 原理图重做**：从「零导线 + 每引脚一个标签」改为**真实 wire + junction 连接**；
 > 每条网络只保留 1 个标签（13→3），Reference/Value 移到符号外侧，竖线统一走列间空隙不穿元件，
 > 未连接引脚自动打 no_connect，纸张按内容自适应 A4/A3。KiCad 10 ERC 复验通过。
-> [桌面版下载与使用说明 →](docs/DESKTOP-INSTALL.md)
+>
+> **v2.0.5 PCB 重做**：`.kicad_pcb` 不再是「板框 + 两行文字」的空壳 —— 从本机 KiCad 官方封装库
+> （155 个 `.pretty`）读入**真实封装**（焊盘 / 丝印 / courtyard / 3D 模型），焊盘按网表挂
+> `(net N "NAME")`；按 courtyard 真实尺寸做「模块成块 + 流式换行」排版，板框自适应内容并倒圆角，
+> 大板自动加 4 个 M3 安装孔。三套模板 DRC 实测：**0 重叠、0 越界、0 短接**。
+> [PCB 效果预览 →](docs/pcb-preview.html) ｜ [桌面版下载与使用说明 →](docs/DESKTOP-INSTALL.md)
 
 ## ✨ 功能特性
 
@@ -39,6 +44,9 @@
 ### 设计与工程
 - **自然语言 → BOM / 网表**：结构化 JSON 约束 + 符号目录，生成元器件清单与引脚级连接
 - **JSON → KiCad 原理图**：生成真实可打开的 `.kicad_sch` / `.kicad_pcb` / `.kicad_pro`
+- **PCB 是真正可用的板子**（v2.0.5 重做）：内联 KiCad 官方库封装（焊盘 / 丝印 / courtyard / 3D 模型），
+  焊盘挂真实网络；按 courtyard 尺寸做模块化排版自动折行，板框按内容自适应并倒圆角，大板自动加 M3 安装孔；
+  库里没有对应封装时按管脚数合成规整封装，**没装 KiCad 的机器也能出图**
 - **加权模板匹配**：3 套离线模板按语义打分选型，替代原先「首个关键词命中」
 - **三级能力降级**：自定义 LLM Key → 免费在线 LLM → 离线模板，**任何环境都能跑通**
 - **自动产出三份报告**：工作汇报、操作指南、硬件需求清单
@@ -82,7 +90,7 @@
 
 ### 方式一：桌面应用（推荐，无需 Python）
 
-去仓库 **Releases** 下载 `EDA-Agent-Setup-v2.0.4.exe` 双击安装，或下载 `EDA-Agent.exe` 免安装直接双击。
+去仓库 **Releases** 下载 `EDA-Agent-Setup-v2.0.5.exe` 双击安装，或下载 `EDA-Agent.exe` 免安装直接双击。
 安装后有开始菜单 / 桌面快捷方式，卸载走控制面板。完整说明见 [桌面版安装指南](docs/DESKTOP-INSTALL.md)。
 
 自己构建：
@@ -90,7 +98,7 @@
 ```powershell
 pip install -r requirements-desktop.txt
 powershell -ExecutionPolicy Bypass -File scripts\build_desktop.ps1
-# 产物：dist\EDA-Agent.exe 与 dist\installer\EDA-Agent-Setup-v2.0.4.exe
+# 产物：dist\EDA-Agent.exe 与 dist\installer\EDA-Agent-Setup-v2.0.5.exe
 ```
 
 推一个 `v*` 标签即可让 GitHub Actions 自动构建安装包并发布 Release。

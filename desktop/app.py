@@ -228,7 +228,7 @@ def run_desktop(host="127.0.0.1", port=None, debug=False, force_browser=False):
         return 1
 
     print("=" * 60)
-    print("  EDA Agent Desktop  v2.0.4")
+    print("  EDA Agent Desktop  v2.0.5")
     print("  Local service : %s" % url)
     print("  Mode          : %s" % ("browser fallback" if force_browser else "native window"))
     print("=" * 60)
