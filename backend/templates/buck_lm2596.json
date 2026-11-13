@@ -1,0 +1,187 @@
+{
+  "title": "LM2596 5V 降压开关电源（2A）",
+  "company": "SDU",
+  "revision": "1.0",
+  "paper": "A4",
+  "groups": [
+    {
+      "name": "输入滤波",
+      "refs": [
+        "J1",
+        "C1"
+      ]
+    },
+    {
+      "name": "开关核心",
+      "refs": [
+        "U1",
+        "L1",
+        "D1"
+      ]
+    },
+    {
+      "name": "输出滤波",
+      "refs": [
+        "C2",
+        "C3",
+        "J2"
+      ]
+    }
+  ],
+  "components": [
+    {
+      "ref": "U1",
+      "lib": "Regulator_Switching",
+      "symbol": "LM2596S-5",
+      "value": "LM2596S-5.0",
+      "footprint": "Package_TO_SOT_SMD:TO-263-5_TabPin3"
+    },
+    {
+      "ref": "L1",
+      "lib": "Device",
+      "symbol": "L",
+      "value": "33uH",
+      "footprint": "Inductor_SMD:L_Bourns_SRN6045TA"
+    },
+    {
+      "ref": "D1",
+      "lib": "Device",
+      "symbol": "D",
+      "value": "SS34",
+      "footprint": "Diode_SMD:D_SMA"
+    },
+    {
+      "ref": "C1",
+      "lib": "Device",
+      "symbol": "CP",
+      "value": "220uF",
+      "footprint": "Capacitor_SMD:CP_Elec_6.3x5.4"
+    },
+    {
+      "ref": "C2",
+      "lib": "Device",
+      "symbol": "CP",
+      "value": "220uF",
+      "footprint": "Capacitor_SMD:CP_Elec_6.3x5.4"
+    },
+    {
+      "ref": "C3",
+      "lib": "Device",
+      "symbol": "C",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric"
+    },
+    {
+      "ref": "J1",
+      "lib": "Connector_Generic",
+      "symbol": "Conn_01x02",
+      "value": "8~36V 输入",
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical"
+    },
+    {
+      "ref": "J2",
+      "lib": "Connector_Generic",
+      "symbol": "Conn_01x02",
+      "value": "5V 输出",
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical"
+    }
+  ],
+  "nets": [
+    {
+      "name": "VIN",
+      "connections": [
+        {
+          "ref": "J1",
+          "pin": "1"
+        },
+        {
+          "ref": "U1",
+          "pin": "1"
+        },
+        {
+          "ref": "C1",
+          "pin": "1"
+        }
+      ]
+    },
+    {
+      "name": "GND",
+      "connections": [
+        {
+          "ref": "J1",
+          "pin": "2"
+        },
+        {
+          "ref": "C1",
+          "pin": "2"
+        },
+        {
+          "ref": "U1",
+          "pin": "3"
+        },
+        {
+          "ref": "C2",
+          "pin": "2"
+        },
+        {
+          "ref": "C3",
+          "pin": "2"
+        },
+        {
+          "ref": "D1",
+          "pin": "2"
+        },
+        {
+          "ref": "J2",
+          "pin": "2"
+        },
+        {
+          "ref": "U1",
+          "pin": "5"
+        }
+      ]
+    },
+    {
+      "name": "SW",
+      "connections": [
+        {
+          "ref": "U1",
+          "pin": "2"
+        },
+        {
+          "ref": "L1",
+          "pin": "1"
+        },
+        {
+          "ref": "D1",
+          "pin": "1"
+        }
+      ]
+    },
+    {
+      "name": "VOUT",
+      "connections": [
+        {
+          "ref": "L1",
+          "pin": "2"
+        },
+        {
+          "ref": "C2",
+          "pin": "1"
+        },
+        {
+          "ref": "C3",
+          "pin": "1"
+        },
+        {
+          "ref": "U1",
+          "pin": "4"
+        },
+        {
+          "ref": "J2",
+          "pin": "1"
+        }
+      ]
+    }
+  ]
+}

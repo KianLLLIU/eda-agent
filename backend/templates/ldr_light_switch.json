@@ -1,0 +1,226 @@
+{
+  "title": "光敏电阻光控开关（LM393）",
+  "company": "SDU",
+  "revision": "1.0",
+  "paper": "A4",
+  "groups": [
+    {
+      "name": "光敏检测",
+      "refs": [
+        "R1",
+        "R2",
+        "C1"
+      ]
+    },
+    {
+      "name": "阈值比较",
+      "refs": [
+        "U1",
+        "RV1"
+      ]
+    },
+    {
+      "name": "输出指示",
+      "refs": [
+        "R3",
+        "R4",
+        "LED1"
+      ]
+    },
+    {
+      "name": "接口",
+      "refs": [
+        "J1"
+      ]
+    }
+  ],
+  "components": [
+    {
+      "ref": "U1",
+      "lib": "Comparator",
+      "symbol": "LM393",
+      "value": "LM393",
+      "footprint": "Package_DIP:DIP-8_W7.62mm"
+    },
+    {
+      "ref": "R1",
+      "lib": "Device",
+      "symbol": "R_PHOTO",
+      "value": "GL5528 光敏",
+      "footprint": "Resistor_SMD:R_0805_2012Metric"
+    },
+    {
+      "ref": "R2",
+      "lib": "Device",
+      "symbol": "R",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric"
+    },
+    {
+      "ref": "RV1",
+      "lib": "Device",
+      "symbol": "R_Potentiometer",
+      "value": "10k 阈值",
+      "footprint": "Potentiometer_THT:Potentiometer_Alps_RK09K_Single_Horizontal"
+    },
+    {
+      "ref": "R3",
+      "lib": "Device",
+      "symbol": "R",
+      "value": "1k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric"
+    },
+    {
+      "ref": "R4",
+      "lib": "Device",
+      "symbol": "R",
+      "value": "10k 上拉",
+      "footprint": "Resistor_SMD:R_0805_2012Metric"
+    },
+    {
+      "ref": "LED1",
+      "lib": "Device",
+      "symbol": "LED",
+      "value": "红 光照指示",
+      "footprint": "LED_SMD:LED_0805_2012Metric"
+    },
+    {
+      "ref": "C1",
+      "lib": "Device",
+      "symbol": "C",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric"
+    },
+    {
+      "ref": "J1",
+      "lib": "Connector_Generic",
+      "symbol": "Conn_01x03",
+      "value": "VCC / OUT / GND",
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical"
+    }
+  ],
+  "nets": [
+    {
+      "name": "VCC",
+      "connections": [
+        {
+          "ref": "J1",
+          "pin": "1"
+        },
+        {
+          "ref": "U1",
+          "pin": "8"
+        },
+        {
+          "ref": "R2",
+          "pin": "1"
+        },
+        {
+          "ref": "RV1",
+          "pin": "1"
+        },
+        {
+          "ref": "R3",
+          "pin": "1"
+        },
+        {
+          "ref": "R4",
+          "pin": "1"
+        },
+        {
+          "ref": "C1",
+          "pin": "1"
+        }
+      ]
+    },
+    {
+      "name": "GND",
+      "connections": [
+        {
+          "ref": "J1",
+          "pin": "3"
+        },
+        {
+          "ref": "U1",
+          "pin": "4"
+        },
+        {
+          "ref": "R1",
+          "pin": "2"
+        },
+        {
+          "ref": "RV1",
+          "pin": "3"
+        },
+        {
+          "ref": "C1",
+          "pin": "2"
+        }
+      ]
+    },
+    {
+      "name": "LIGHT",
+      "connections": [
+        {
+          "ref": "R2",
+          "pin": "2"
+        },
+        {
+          "ref": "R1",
+          "pin": "1"
+        },
+        {
+          "ref": "U1",
+          "pin": "2"
+        }
+      ]
+    },
+    {
+      "name": "REF",
+      "connections": [
+        {
+          "ref": "RV1",
+          "pin": "2"
+        },
+        {
+          "ref": "U1",
+          "pin": "3"
+        }
+      ]
+    },
+    {
+      "name": "OUT",
+      "connections": [
+        {
+          "ref": "U1",
+          "pin": "1"
+        },
+        {
+          "ref": "R4",
+          "pin": "2"
+        },
+        {
+          "ref": "J1",
+          "pin": "2"
+        },
+        {
+          "ref": "LED1",
+          "pin": "1"
+        }
+      ]
+    },
+    {
+      "name": "LED_A",
+      "connections": [
+        {
+          "ref": "R3",
+          "pin": "2"
+        },
+        {
+          "ref": "LED1",
+          "pin": "2"
+        }
+      ]
+    }
+  ]
+}

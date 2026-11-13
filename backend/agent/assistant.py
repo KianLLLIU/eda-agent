@@ -22,7 +22,7 @@ import uuid
 from .. import config
 from . import nlu
 
-VERSION = "2.0.5"
+VERSION = "2.1.0"
 
 ASSISTANT_PROFILE = {
     "name": "W",
@@ -41,7 +41,7 @@ CAPABILITIES = [
     {"icon": "tag", "title": "关键词与参数抽取", "desc": "内置 40+ 组电路术语同义词词典，识别元件、功能、接口、电压、阻值、容值、元件编号"},
     {"icon": "spark", "title": "自然语言生成电路", "desc": "一句话生成 BOM + 引脚级网表，支持入门 / 进阶 / 挑战三档复杂度"},
     {"icon": "edit", "title": "对话式改图", "desc": "「把 C1 换成 100nF」「增加一组去耦电容」实时更新设计与原理图，离线也能改"},
-    {"icon": "layers", "title": "离线模板库", "desc": "内置 LED 闪烁、LED 指示、LDO 稳压等模板，加权语义匹配，无网络也能跑通"},
+    {"icon": "layers", "title": "板子库", "desc": "23 块现成板子（电源 / 灯光 / 传感器 / 驱动 / 接口），加权语义匹配，无网络也能跑通"},
     {"icon": "chip", "title": "KiCad 工程导出", "desc": "生成 .kicad_sch / .kicad_pcb / .kicad_pro + 库表 + BOM + NETLIST，可一键唤起本机 KiCad"},
     {"icon": "doc", "title": "自动报告", "desc": "同步产出工作汇报、操作指南、硬件需求三份 Markdown 文档"},
     {"icon": "eye", "title": "实时构图与解释", "desc": "元件逐个摆放、连线逐条绘制的动画；可切换三种板色，能解释电路工作原理"},
@@ -390,17 +390,17 @@ def build_reply(analysis: dict, ctx: dict) -> dict:
         actions = [{"type": "settings", "label": "打开设置面板"}]
 
     elif intent == "template":
-        reply = "\n".join([
-            "**离线模板库**（无网络也能生成完整 KiCad 工程）",
-            "",
-            "1. LED 闪烁最小系统 — ATmega328P + 晶振 + 复位 + LED",
-            "2. LED 指示灯 — 电源指示 + 限流电阻",
-            "3. 5V 转 3.3V LDO 稳压 — AMS1117 + 输入输出滤波",
-            "",
-            "点左侧「模板库」卡片即可直接套用；也可以描述需求，我会按语义加权自动选最贴近的模板。",
-        ])
+        from .pipeline import TEMPLATES, TEMPLATE_CATEGORIES
+        lines = ["**板子库**（共 %d 块，无网络也能生成完整 KiCad 工程）" % len(TEMPLATES), ""]
+        for cat in TEMPLATE_CATEGORIES:
+            items = [m["name"] for m in TEMPLATES.values() if m["category"] == cat]
+            if items:
+                lines.append("- **%s**：%s" % (cat, "、".join(items)))
+        lines += ["", "点左侧「板子库」卡片按分类筛选后可直接套用；"
+                      "也可以在对话框里直接描述需求，我会按语义加权自动选最贴近的板子。"]
+        reply = "\n".join(lines)
         tpl = analysis["template"]["best"]
-        suggestions = ["套用 LED 闪烁模板", "套用 LDO 稳压模板", "套用 LED 指示灯模板"]
+        suggestions = ["做一个 MQ-2 气体报警板", "画一个 RS485 通信接口板", "用 555 和 4017 做流水灯"]
         actions = [{"type": "template", "value": tpl, "label": "套用推荐模板"}]
 
     elif intent == "explain":

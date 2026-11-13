@@ -40,6 +40,7 @@ from .agent import (
     build_project_files,
     package_project,
     list_templates,
+    list_template_categories,
     load_template_by_name,
     nlu,
     assistant,
@@ -368,6 +369,7 @@ def capabilities():
     payload = assistant.capabilities_payload(s)
     payload["greeting"] = assistant.greeting(s)
     payload["templates"] = list_templates()
+    payload["template_categories"] = list_template_categories()
     return payload
 
 

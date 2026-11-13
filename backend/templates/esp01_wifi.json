@@ -1,0 +1,250 @@
+{
+  "title": "ESP-01 WiFi 模块底板（3.3V）",
+  "company": "SDU",
+  "revision": "1.0",
+  "paper": "A4",
+  "groups": [
+    {
+      "name": "3.3V 供电",
+      "refs": [
+        "J1",
+        "U2",
+        "C1",
+        "C2",
+        "C3"
+      ]
+    },
+    {
+      "name": "模块座",
+      "refs": [
+        "U1",
+        "R1",
+        "R2",
+        "SW1"
+      ]
+    },
+    {
+      "name": "串口引出",
+      "refs": [
+        "J2"
+      ]
+    }
+  ],
+  "components": [
+    {
+      "ref": "U1",
+      "lib": "Module",
+      "symbol": "ESP-01",
+      "value": "ESP-01S",
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_2x04_P2.54mm_Vertical"
+    },
+    {
+      "ref": "U2",
+      "lib": "Regulator_Linear",
+      "symbol": "LDO",
+      "value": "AMS1117-3.3",
+      "footprint": "Package_TO_SOT_SMD:SOT-223-3_TabPin2"
+    },
+    {
+      "ref": "C1",
+      "lib": "Device",
+      "symbol": "C",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric"
+    },
+    {
+      "ref": "C2",
+      "lib": "Device",
+      "symbol": "C",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric"
+    },
+    {
+      "ref": "C3",
+      "lib": "Device",
+      "symbol": "C",
+      "value": "22uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric"
+    },
+    {
+      "ref": "R1",
+      "lib": "Device",
+      "symbol": "R",
+      "value": "10k 复位上拉",
+      "footprint": "Resistor_SMD:R_0805_2012Metric"
+    },
+    {
+      "ref": "R2",
+      "lib": "Device",
+      "symbol": "R",
+      "value": "10k 使能上拉",
+      "footprint": "Resistor_SMD:R_0805_2012Metric"
+    },
+    {
+      "ref": "SW1",
+      "lib": "Device",
+      "symbol": "SW_Push",
+      "value": "复位键",
+      "footprint": "Button_Switch_THT:SW_PUSH_6mm"
+    },
+    {
+      "ref": "J1",
+      "lib": "Connector_Generic",
+      "symbol": "Conn_01x02",
+      "value": "5V 输入",
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical"
+    },
+    {
+      "ref": "J2",
+      "lib": "Connector_Generic",
+      "symbol": "Conn_01x04",
+      "value": "3V3 / TX / RX / GND",
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical"
+    }
+  ],
+  "nets": [
+    {
+      "name": "VIN",
+      "connections": [
+        {
+          "ref": "J1",
+          "pin": "1"
+        },
+        {
+          "ref": "U2",
+          "pin": "1"
+        },
+        {
+          "ref": "C1",
+          "pin": "1"
+        }
+      ]
+    },
+    {
+      "name": "GND",
+      "connections": [
+        {
+          "ref": "J1",
+          "pin": "2"
+        },
+        {
+          "ref": "U2",
+          "pin": "2"
+        },
+        {
+          "ref": "C1",
+          "pin": "2"
+        },
+        {
+          "ref": "C2",
+          "pin": "2"
+        },
+        {
+          "ref": "C3",
+          "pin": "2"
+        },
+        {
+          "ref": "U1",
+          "pin": "5"
+        },
+        {
+          "ref": "J2",
+          "pin": "4"
+        },
+        {
+          "ref": "SW1",
+          "pin": "1"
+        }
+      ]
+    },
+    {
+      "name": "V33",
+      "connections": [
+        {
+          "ref": "U2",
+          "pin": "3"
+        },
+        {
+          "ref": "C2",
+          "pin": "1"
+        },
+        {
+          "ref": "C3",
+          "pin": "1"
+        },
+        {
+          "ref": "U1",
+          "pin": "4"
+        },
+        {
+          "ref": "R1",
+          "pin": "1"
+        },
+        {
+          "ref": "R2",
+          "pin": "1"
+        },
+        {
+          "ref": "J2",
+          "pin": "1"
+        }
+      ]
+    },
+    {
+      "name": "RST",
+      "connections": [
+        {
+          "ref": "U1",
+          "pin": "3"
+        },
+        {
+          "ref": "R1",
+          "pin": "2"
+        },
+        {
+          "ref": "SW1",
+          "pin": "2"
+        }
+      ]
+    },
+    {
+      "name": "CH_PD",
+      "connections": [
+        {
+          "ref": "U1",
+          "pin": "2"
+        },
+        {
+          "ref": "R2",
+          "pin": "2"
+        }
+      ]
+    },
+    {
+      "name": "TXD",
+      "connections": [
+        {
+          "ref": "U1",
+          "pin": "1"
+        },
+        {
+          "ref": "J2",
+          "pin": "2"
+        }
+      ]
+    },
+    {
+      "name": "RXD",
+      "connections": [
+        {
+          "ref": "U1",
+          "pin": "8"
+        },
+        {
+          "ref": "J2",
+          "pin": "3"
+        }
+      ]
+    }
+  ]
+}

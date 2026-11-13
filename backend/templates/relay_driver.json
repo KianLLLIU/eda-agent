@@ -1,0 +1,240 @@
+{
+  "title": "NPN 继电器驱动板（5V）",
+  "company": "SDU",
+  "revision": "1.0",
+  "paper": "A4",
+  "groups": [
+    {
+      "name": "输入控制",
+      "refs": [
+        "J1",
+        "R1",
+        "R2",
+        "Q1"
+      ]
+    },
+    {
+      "name": "继电器",
+      "refs": [
+        "K1",
+        "D1",
+        "R3",
+        "LED1"
+      ]
+    },
+    {
+      "name": "输出端子",
+      "refs": [
+        "J2"
+      ]
+    }
+  ],
+  "components": [
+    {
+      "ref": "Q1",
+      "lib": "Device",
+      "symbol": "Q_NPN_BCE",
+      "value": "S8050",
+      "footprint": "Package_TO_SOT_THT:TO-92_Inline"
+    },
+    {
+      "ref": "R1",
+      "lib": "Device",
+      "symbol": "R",
+      "value": "1k 基极",
+      "footprint": "Resistor_SMD:R_0805_2012Metric"
+    },
+    {
+      "ref": "R2",
+      "lib": "Device",
+      "symbol": "R",
+      "value": "10k 下拉",
+      "footprint": "Resistor_SMD:R_0805_2012Metric"
+    },
+    {
+      "ref": "D1",
+      "lib": "Device",
+      "symbol": "D",
+      "value": "1N4148 续流",
+      "footprint": "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal"
+    },
+    {
+      "ref": "K1",
+      "lib": "Relay",
+      "symbol": "SANYOU_SRD_05VDC",
+      "value": "SRD-05VDC-SL-C",
+      "footprint": "Relay_THT:Relay_SPDT_SANYOU_SRD_Series_Form_C"
+    },
+    {
+      "ref": "R3",
+      "lib": "Device",
+      "symbol": "R",
+      "value": "1k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric"
+    },
+    {
+      "ref": "LED1",
+      "lib": "Device",
+      "symbol": "LED",
+      "value": "绿 吸合指示",
+      "footprint": "LED_SMD:LED_0805_2012Metric"
+    },
+    {
+      "ref": "J1",
+      "lib": "Connector_Generic",
+      "symbol": "Conn_01x03",
+      "value": "5V / IN / GND",
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical"
+    },
+    {
+      "ref": "J2",
+      "lib": "Connector_Generic",
+      "symbol": "Conn_01x03",
+      "value": "COM / NO / NC",
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical"
+    }
+  ],
+  "nets": [
+    {
+      "name": "VCC",
+      "connections": [
+        {
+          "ref": "J1",
+          "pin": "1"
+        },
+        {
+          "ref": "K1",
+          "pin": "1"
+        },
+        {
+          "ref": "D1",
+          "pin": "1"
+        },
+        {
+          "ref": "R3",
+          "pin": "1"
+        }
+      ]
+    },
+    {
+      "name": "GND",
+      "connections": [
+        {
+          "ref": "J1",
+          "pin": "3"
+        },
+        {
+          "ref": "Q1",
+          "pin": "3"
+        },
+        {
+          "ref": "R2",
+          "pin": "2"
+        }
+      ]
+    },
+    {
+      "name": "IN",
+      "connections": [
+        {
+          "ref": "J1",
+          "pin": "2"
+        },
+        {
+          "ref": "R1",
+          "pin": "1"
+        }
+      ]
+    },
+    {
+      "name": "BASE",
+      "connections": [
+        {
+          "ref": "R1",
+          "pin": "2"
+        },
+        {
+          "ref": "R2",
+          "pin": "1"
+        },
+        {
+          "ref": "Q1",
+          "pin": "2"
+        }
+      ]
+    },
+    {
+      "name": "COLL",
+      "connections": [
+        {
+          "ref": "Q1",
+          "pin": "1"
+        },
+        {
+          "ref": "K1",
+          "pin": "2"
+        },
+        {
+          "ref": "D1",
+          "pin": "2"
+        },
+        {
+          "ref": "LED1",
+          "pin": "1"
+        }
+      ]
+    },
+    {
+      "name": "LED_A",
+      "connections": [
+        {
+          "ref": "R3",
+          "pin": "2"
+        },
+        {
+          "ref": "LED1",
+          "pin": "2"
+        }
+      ]
+    },
+    {
+      "name": "COM",
+      "connections": [
+        {
+          "ref": "K1",
+          "pin": "3"
+        },
+        {
+          "ref": "J2",
+          "pin": "1"
+        }
+      ]
+    },
+    {
+      "name": "NO",
+      "connections": [
+        {
+          "ref": "K1",
+          "pin": "4"
+        },
+        {
+          "ref": "J2",
+          "pin": "2"
+        }
+      ]
+    },
+    {
+      "name": "NC",
+      "connections": [
+        {
+          "ref": "K1",
+          "pin": "5"
+        },
+        {
+          "ref": "J2",
+          "pin": "3"
+        }
+      ]
+    }
+  ]
+}

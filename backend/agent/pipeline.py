@@ -39,22 +39,113 @@ from .llm import LLMClient, LLMError, extract_json
 from .prompts import SYSTEM_PROMPT, build_user_prompt
 from .validator import validate_design, DesignError
 
-# 内置模板索引
+# 内置模板索引（v2.1 扩充为 23 块板子，按用途分类）
 TEMPLATES = {
-    "led_blink": ("LED 闪烁电路", "led_blink.json"),
-    "led_indicator": ("LED 指示灯电路", "led_indicator.json"),
-    "ldo_3v3": ("5V 转 3.3V LDO 稳压电路", "ldo_3v3.json"),
+    # ---------------- 电源类 ----------------
+    "ldo_3v3": {
+        "name": "5V 转 3.3V LDO 稳压", "file": "ldo_3v3.json", "category": "电源",
+        "desc": "AMS1117-3.3 线性稳压，含输入输出滤波电容与接线端子",
+    },
+    "ldo_5v_7805": {
+        "name": "LM7805 5V 线性稳压", "file": "ldo_5v_7805.json", "category": "电源",
+        "desc": "经典 TO-220 三端稳压，100uF 输入输出储能 + 100nF 高频去耦",
+    },
+    "buck_lm2596": {
+        "name": "LM2596 5V 2A 降压", "file": "buck_lm2596.json", "category": "电源",
+        "desc": "开关降压方案：33uH 储能电感 + SS34 续流肖特基 + 反馈取样",
+    },
+    "tp4056_charger": {
+        "name": "TP4056 锂电充电板", "file": "tp4056_charger.json", "category": "电源",
+        "desc": "1A 恒流恒压充电，1.2k 设定电流，充电/充满双色状态灯",
+    },
+    "power_5v_3v3": {
+        "name": "5V / 3.3V 双路电源", "file": "power_5v_3v3.json", "category": "电源",
+        "desc": "LM7805 一级降压 + AMS1117 二级稳压，单片机与传感器常用供电",
+    },
+    # ---------------- LED 灯光类 ----------------
+    "led_indicator": {
+        "name": "LED 指示灯电路", "file": "led_indicator.json", "category": "LED 灯光",
+        "desc": "电源指示灯 + 限流电阻，元件最少，适合入门与快速验证",
+    },
+    "led_blink": {
+        "name": "LED 闪烁电路", "file": "led_blink.json", "category": "LED 灯光",
+        "desc": "ATmega328P 最小系统 + 晶振 + 复位 + LED 闪烁，完整 MCU 电路",
+    },
+    "led_flash_555": {
+        "name": "NE555 无稳态闪灯", "file": "led_flash_555.json", "category": "LED 灯光",
+        "desc": "555 多谐振荡器闪灯，电阻电容决定频率，纯硬件无需编程",
+    },
+    "led_chaser_4017": {
+        "name": "CD4017 六路流水灯", "file": "led_chaser_4017.json", "category": "LED 灯光",
+        "desc": "555 提供时钟 + 4017 十进制计数，六路 LED 依次点亮，可用电位器调速",
+    },
+    "rgb_led_board": {
+        "name": "RGB 三色灯板", "file": "rgb_led_board.json", "category": "LED 灯光",
+        "desc": "共阴 RGB 灯珠，红绿蓝三路独立限流，四线接口直接接 MCU",
+    },
+    "led_strip_mosfet": {
+        "name": "MOSFET 灯带调光", "file": "led_strip_mosfet.json", "category": "LED 灯光",
+        "desc": "AO3400 低边开关驱动 12V 灯带，支持 PWM 调光，栅极带下拉与滤波",
+    },
+    # ---------------- 传感器类 ----------------
+    "dht11_sensor": {
+        "name": "DHT11 温湿度板", "file": "dht11_sensor.json", "category": "传感器",
+        "desc": "DHT11 温湿度模块，10k 数据上拉 + 100nF 去耦 + 电源指示",
+    },
+    "ds18b20_sensor": {
+        "name": "DS18B20 测温板", "file": "ds18b20_sensor.json", "category": "传感器",
+        "desc": "单总线数字测温，4.7k 上拉电阻，TO-92 直插封装",
+    },
+    "hcsr04_ultrasonic": {
+        "name": "HC-SR04 超声波板", "file": "hcsr04_ultrasonic.json", "category": "传感器",
+        "desc": "超声波测距模块，Echo 5V 输出用 1k/2k 分压成 3.3V 电平",
+    },
+    "ldr_light_switch": {
+        "name": "光控开关（LM393）", "file": "ldr_light_switch.json", "category": "传感器",
+        "desc": "光敏电阻分压 + LM393 比较，电位器调阈值，输出带指示灯",
+    },
+    "mq2_gas_alarm": {
+        "name": "MQ-2 气体报警板", "file": "mq2_gas_alarm.json", "category": "传感器",
+        "desc": "可燃气体检测，LM393 比较阈值后驱动蜂鸣器与红灯，可输出报警信号",
+    },
+    # ---------------- 执行器 / 驱动类 ----------------
+    "relay_driver": {
+        "name": "继电器驱动板", "file": "relay_driver.json", "category": "驱动",
+        "desc": "S8050 三极管驱动 SRD-05VDC 继电器，1N4148 续流 + 吸合指示灯",
+    },
+    "uln2003_stepper": {
+        "name": "ULN2003 步进电机", "file": "uln2003_stepper.json", "category": "驱动",
+        "desc": "达林顿阵列驱动 28BYJ-48 五线步进电机，四路输入直接接 MCU",
+    },
+    "buzzer_alarm": {
+        "name": "蜂鸣器驱动板", "file": "buzzer_alarm.json", "category": "驱动",
+        "desc": "有源蜂鸣器 + NPN 驱动，基极限流下拉、续流二极管、状态灯齐全",
+    },
+    "lm386_amp": {
+        "name": "LM386 音频功放", "file": "lm386_amp.json", "category": "驱动",
+        "desc": "音频功放，电位器调音量，输入输出耦合电容 + 电源旁路",
+    },
+    # ---------------- 通信 / 接口类 ----------------
+    "esp01_wifi": {
+        "name": "ESP-01 WiFi 底板", "file": "esp01_wifi.json", "category": "接口",
+        "desc": "ESP-01S 转接板：AMS1117 3.3V 供电、复位按键、串口与使能上拉",
+    },
+    "max485_rs485": {
+        "name": "MAX485 通信接口", "file": "max485_rs485.json", "category": "接口",
+        "desc": "RS-485 收发器，120R 终端电阻 + 总线偏置，DE/RE 方向控制引出",
+    },
+    "i2c_oled": {
+        "name": "I2C OLED 接口板", "file": "i2c_oled.json", "category": "接口",
+        "desc": "0.96 寸 SSD1306 屏座，4.7k I2C 上拉与去耦电容",
+    },
 }
 
-TEMPLATE_DESCRIPTIONS = {
-    "led_blink": "ATmega328P 最小系统 + 晶振 + 复位 + LED 闪烁，适合演示完整 MCU 电路",
-    "led_indicator": "电源指示灯 + 限流电阻，元件最少，适合入门与快速验证",
-    "ldo_3v3": "AMS1117-3.3 线性稳压，含输入输出滤波电容与接线端子",
-}
+# 分类展示顺序
+TEMPLATE_CATEGORIES = ["电源", "LED 灯光", "传感器", "驱动", "接口"]
 
 
 def _load_template(name):
-    path = os.path.join(config.TEMPLATE_DIR, TEMPLATES[name][1])
+    path = os.path.join(config.TEMPLATE_DIR, TEMPLATES[name]["file"])
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
@@ -66,28 +157,41 @@ def _match_template(requirement: str, analysis: dict = None):
     return nlu.match_template(requirement)[0]
 
 
-def list_templates():
+def list_templates(category: str = None):
     """模板库清单（供前端模板卡片渲染）"""
     out = []
-    for name, (label, filename) in TEMPLATES.items():
-        path = os.path.join(config.TEMPLATE_DIR, filename)
+    for name, meta in TEMPLATES.items():
+        if category and meta["category"] != category:
+            continue
+        path = os.path.join(config.TEMPLATE_DIR, meta["file"])
         comps = nets = 0
-        title = label
+        title = meta["name"]
         try:
             with open(path, "r", encoding="utf-8") as f:
                 d = json.load(f)
             comps = len(d.get("components", []))
             nets = len(d.get("nets", []))
-            title = d.get("title", label)
+            title = d.get("title", meta["name"])
         except Exception:
             pass
         out.append({
-            "id": name, "name": label, "title": title,
-            "description": TEMPLATE_DESCRIPTIONS.get(name, ""),
+            "id": name, "name": meta["name"], "title": title,
+            "category": meta["category"],
+            "description": meta["desc"],
             "components": comps, "nets": nets,
             "signals": [s[0] for s in nlu.TEMPLATE_SIGNALS.get(name, [])[:6]],
         })
     return out
+
+
+def list_template_categories():
+    """分类清单（含每类数量），供前端分组筛选"""
+    counts = {}
+    for meta in TEMPLATES.values():
+        counts[meta["category"]] = counts.get(meta["category"], 0) + 1
+    ordered = [c for c in TEMPLATE_CATEGORIES if c in counts]
+    ordered += [c for c in counts if c not in ordered]
+    return [{"name": c, "count": counts[c]} for c in ordered]
 
 
 def load_template_by_name(name):

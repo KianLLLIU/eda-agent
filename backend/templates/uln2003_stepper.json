@@ -1,0 +1,218 @@
+{
+  "title": "ULN2003 步进电机驱动（28BYJ-48）",
+  "company": "SDU",
+  "revision": "1.0",
+  "paper": "A4",
+  "groups": [
+    {
+      "name": "驱动芯片",
+      "refs": [
+        "U1",
+        "C1"
+      ]
+    },
+    {
+      "name": "控制输入",
+      "refs": [
+        "J1"
+      ]
+    },
+    {
+      "name": "电机输出",
+      "refs": [
+        "J2"
+      ]
+    },
+    {
+      "name": "电源",
+      "refs": [
+        "J3"
+      ]
+    }
+  ],
+  "components": [
+    {
+      "ref": "U1",
+      "lib": "Transistor_Array",
+      "symbol": "ULN2003",
+      "value": "ULN2003A",
+      "footprint": "Package_DIP:DIP-16_W7.62mm"
+    },
+    {
+      "ref": "C1",
+      "lib": "Device",
+      "symbol": "C",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric"
+    },
+    {
+      "ref": "J1",
+      "lib": "Connector_Generic",
+      "symbol": "Conn_01x05",
+      "value": "IN1~IN4 / GND",
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical"
+    },
+    {
+      "ref": "J2",
+      "lib": "Connector_Generic",
+      "symbol": "Conn_01x05",
+      "value": "电机 5 线",
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical"
+    },
+    {
+      "ref": "J3",
+      "lib": "Connector_Generic",
+      "symbol": "Conn_01x02",
+      "value": "5V 电源",
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical"
+    }
+  ],
+  "nets": [
+    {
+      "name": "VCC",
+      "connections": [
+        {
+          "ref": "J3",
+          "pin": "1"
+        },
+        {
+          "ref": "U1",
+          "pin": "9"
+        },
+        {
+          "ref": "J2",
+          "pin": "5"
+        },
+        {
+          "ref": "C1",
+          "pin": "1"
+        }
+      ]
+    },
+    {
+      "name": "GND",
+      "connections": [
+        {
+          "ref": "J3",
+          "pin": "2"
+        },
+        {
+          "ref": "U1",
+          "pin": "8"
+        },
+        {
+          "ref": "J1",
+          "pin": "5"
+        },
+        {
+          "ref": "C1",
+          "pin": "2"
+        }
+      ]
+    },
+    {
+      "name": "IN1",
+      "connections": [
+        {
+          "ref": "J1",
+          "pin": "1"
+        },
+        {
+          "ref": "U1",
+          "pin": "1"
+        }
+      ]
+    },
+    {
+      "name": "IN2",
+      "connections": [
+        {
+          "ref": "J1",
+          "pin": "2"
+        },
+        {
+          "ref": "U1",
+          "pin": "2"
+        }
+      ]
+    },
+    {
+      "name": "IN3",
+      "connections": [
+        {
+          "ref": "J1",
+          "pin": "3"
+        },
+        {
+          "ref": "U1",
+          "pin": "3"
+        }
+      ]
+    },
+    {
+      "name": "IN4",
+      "connections": [
+        {
+          "ref": "J1",
+          "pin": "4"
+        },
+        {
+          "ref": "U1",
+          "pin": "4"
+        }
+      ]
+    },
+    {
+      "name": "OUT1",
+      "connections": [
+        {
+          "ref": "U1",
+          "pin": "16"
+        },
+        {
+          "ref": "J2",
+          "pin": "1"
+        }
+      ]
+    },
+    {
+      "name": "OUT2",
+      "connections": [
+        {
+          "ref": "U1",
+          "pin": "15"
+        },
+        {
+          "ref": "J2",
+          "pin": "2"
+        }
+      ]
+    },
+    {
+      "name": "OUT3",
+      "connections": [
+        {
+          "ref": "U1",
+          "pin": "14"
+        },
+        {
+          "ref": "J2",
+          "pin": "3"
+        }
+      ]
+    },
+    {
+      "name": "OUT4",
+      "connections": [
+        {
+          "ref": "U1",
+          "pin": "13"
+        },
+        {
+          "ref": "J2",
+          "pin": "4"
+        }
+      ]
+    }
+  ]
+}

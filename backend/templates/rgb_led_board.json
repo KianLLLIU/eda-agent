@@ -1,0 +1,182 @@
+{
+  "title": "RGB 三色灯板（共阴 4 线）",
+  "company": "SDU",
+  "revision": "1.0",
+  "paper": "A4",
+  "groups": [
+    {
+      "name": "输入",
+      "refs": [
+        "J1"
+      ]
+    },
+    {
+      "name": "限流",
+      "refs": [
+        "R1",
+        "R2",
+        "R3"
+      ]
+    },
+    {
+      "name": "灯珠",
+      "refs": [
+        "LED1",
+        "LED2",
+        "LED3"
+      ]
+    }
+  ],
+  "components": [
+    {
+      "ref": "LED1",
+      "lib": "Device",
+      "symbol": "LED",
+      "value": "红",
+      "footprint": "LED_SMD:LED_0805_2012Metric"
+    },
+    {
+      "ref": "LED2",
+      "lib": "Device",
+      "symbol": "LED",
+      "value": "绿",
+      "footprint": "LED_SMD:LED_0805_2012Metric"
+    },
+    {
+      "ref": "LED3",
+      "lib": "Device",
+      "symbol": "LED",
+      "value": "蓝",
+      "footprint": "LED_SMD:LED_0805_2012Metric"
+    },
+    {
+      "ref": "R1",
+      "lib": "Device",
+      "symbol": "R",
+      "value": "220",
+      "footprint": "Resistor_SMD:R_0805_2012Metric"
+    },
+    {
+      "ref": "R2",
+      "lib": "Device",
+      "symbol": "R",
+      "value": "150",
+      "footprint": "Resistor_SMD:R_0805_2012Metric"
+    },
+    {
+      "ref": "R3",
+      "lib": "Device",
+      "symbol": "R",
+      "value": "150",
+      "footprint": "Resistor_SMD:R_0805_2012Metric"
+    },
+    {
+      "ref": "J1",
+      "lib": "Connector_Generic",
+      "symbol": "Conn_01x04",
+      "value": "R / G / B / K",
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical"
+    }
+  ],
+  "nets": [
+    {
+      "name": "K",
+      "connections": [
+        {
+          "ref": "J1",
+          "pin": "4"
+        },
+        {
+          "ref": "LED1",
+          "pin": "1"
+        },
+        {
+          "ref": "LED2",
+          "pin": "1"
+        },
+        {
+          "ref": "LED3",
+          "pin": "1"
+        }
+      ]
+    },
+    {
+      "name": "IN_R",
+      "connections": [
+        {
+          "ref": "J1",
+          "pin": "1"
+        },
+        {
+          "ref": "R1",
+          "pin": "1"
+        }
+      ]
+    },
+    {
+      "name": "R_A",
+      "connections": [
+        {
+          "ref": "R1",
+          "pin": "2"
+        },
+        {
+          "ref": "LED1",
+          "pin": "2"
+        }
+      ]
+    },
+    {
+      "name": "IN_G",
+      "connections": [
+        {
+          "ref": "J1",
+          "pin": "2"
+        },
+        {
+          "ref": "R2",
+          "pin": "1"
+        }
+      ]
+    },
+    {
+      "name": "G_A",
+      "connections": [
+        {
+          "ref": "R2",
+          "pin": "2"
+        },
+        {
+          "ref": "LED2",
+          "pin": "2"
+        }
+      ]
+    },
+    {
+      "name": "IN_B",
+      "connections": [
+        {
+          "ref": "J1",
+          "pin": "3"
+        },
+        {
+          "ref": "R3",
+          "pin": "1"
+        }
+      ]
+    },
+    {
+      "name": "B_A",
+      "connections": [
+        {
+          "ref": "R3",
+          "pin": "2"
+        },
+        {
+          "ref": "LED3",
+          "pin": "2"
+        }
+      ]
+    }
+  ]
+}

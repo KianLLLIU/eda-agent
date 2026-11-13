@@ -1,0 +1,203 @@
+{
+  "title": "5V / 3.3V 双路稳压电源",
+  "company": "SDU",
+  "revision": "1.0",
+  "paper": "A4",
+  "groups": [
+    {
+      "name": "一级稳压",
+      "refs": [
+        "J1",
+        "C1",
+        "U1",
+        "C2"
+      ]
+    },
+    {
+      "name": "二级稳压",
+      "refs": [
+        "U2",
+        "C3",
+        "C4",
+        "C5"
+      ]
+    },
+    {
+      "name": "输出排针",
+      "refs": [
+        "J2"
+      ]
+    }
+  ],
+  "components": [
+    {
+      "ref": "U1",
+      "lib": "Regulator_Linear",
+      "symbol": "LM7805",
+      "value": "LM7805",
+      "footprint": "Package_TO_SOT_THT:TO-220-3_Vertical"
+    },
+    {
+      "ref": "U2",
+      "lib": "Regulator_Linear",
+      "symbol": "LDO",
+      "value": "AMS1117-3.3",
+      "footprint": "Package_TO_SOT_SMD:SOT-223-3_TabPin2"
+    },
+    {
+      "ref": "C1",
+      "lib": "Device",
+      "symbol": "CP",
+      "value": "100uF",
+      "footprint": "Capacitor_SMD:CP_Elec_6.3x5.4"
+    },
+    {
+      "ref": "C2",
+      "lib": "Device",
+      "symbol": "C",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric"
+    },
+    {
+      "ref": "C3",
+      "lib": "Device",
+      "symbol": "C",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric"
+    },
+    {
+      "ref": "C4",
+      "lib": "Device",
+      "symbol": "C",
+      "value": "22uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric"
+    },
+    {
+      "ref": "C5",
+      "lib": "Device",
+      "symbol": "C",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric"
+    },
+    {
+      "ref": "J1",
+      "lib": "Connector_Generic",
+      "symbol": "Conn_01x02",
+      "value": "7~12V 输入",
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical"
+    },
+    {
+      "ref": "J2",
+      "lib": "Connector_Generic",
+      "symbol": "Conn_01x03",
+      "value": "5V / GND / 3.3V",
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical"
+    }
+  ],
+  "nets": [
+    {
+      "name": "VIN",
+      "connections": [
+        {
+          "ref": "J1",
+          "pin": "1"
+        },
+        {
+          "ref": "U1",
+          "pin": "1"
+        },
+        {
+          "ref": "C1",
+          "pin": "1"
+        }
+      ]
+    },
+    {
+      "name": "GND",
+      "connections": [
+        {
+          "ref": "J1",
+          "pin": "2"
+        },
+        {
+          "ref": "C1",
+          "pin": "2"
+        },
+        {
+          "ref": "U1",
+          "pin": "2"
+        },
+        {
+          "ref": "C2",
+          "pin": "2"
+        },
+        {
+          "ref": "U2",
+          "pin": "2"
+        },
+        {
+          "ref": "C3",
+          "pin": "2"
+        },
+        {
+          "ref": "C4",
+          "pin": "2"
+        },
+        {
+          "ref": "C5",
+          "pin": "2"
+        },
+        {
+          "ref": "J2",
+          "pin": "2"
+        }
+      ]
+    },
+    {
+      "name": "V5",
+      "connections": [
+        {
+          "ref": "U1",
+          "pin": "3"
+        },
+        {
+          "ref": "C2",
+          "pin": "1"
+        },
+        {
+          "ref": "U2",
+          "pin": "1"
+        },
+        {
+          "ref": "C3",
+          "pin": "1"
+        },
+        {
+          "ref": "J2",
+          "pin": "1"
+        }
+      ]
+    },
+    {
+      "name": "V33",
+      "connections": [
+        {
+          "ref": "U2",
+          "pin": "3"
+        },
+        {
+          "ref": "C4",
+          "pin": "1"
+        },
+        {
+          "ref": "C5",
+          "pin": "1"
+        },
+        {
+          "ref": "J2",
+          "pin": "3"
+        }
+      ]
+    }
+  ]
+}

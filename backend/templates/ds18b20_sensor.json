@@ -1,0 +1,109 @@
+{
+  "title": "DS18B20 单总线测温板",
+  "company": "SDU",
+  "revision": "1.0",
+  "paper": "A4",
+  "groups": [
+    {
+      "name": "测温",
+      "refs": [
+        "U1",
+        "R1",
+        "C1"
+      ]
+    },
+    {
+      "name": "输出排针",
+      "refs": [
+        "J1"
+      ]
+    }
+  ],
+  "components": [
+    {
+      "ref": "U1",
+      "lib": "Sensor",
+      "symbol": "DS18B20",
+      "value": "DS18B20",
+      "footprint": "Package_TO_SOT_THT:TO-92_Inline"
+    },
+    {
+      "ref": "R1",
+      "lib": "Device",
+      "symbol": "R",
+      "value": "4.7k 上拉",
+      "footprint": "Resistor_SMD:R_0805_2012Metric"
+    },
+    {
+      "ref": "C1",
+      "lib": "Device",
+      "symbol": "C",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric"
+    },
+    {
+      "ref": "J1",
+      "lib": "Connector_Generic",
+      "symbol": "Conn_01x03",
+      "value": "VCC / DQ / GND",
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical"
+    }
+  ],
+  "nets": [
+    {
+      "name": "VDD",
+      "connections": [
+        {
+          "ref": "U1",
+          "pin": "3"
+        },
+        {
+          "ref": "R1",
+          "pin": "1"
+        },
+        {
+          "ref": "C1",
+          "pin": "1"
+        },
+        {
+          "ref": "J1",
+          "pin": "1"
+        }
+      ]
+    },
+    {
+      "name": "GND",
+      "connections": [
+        {
+          "ref": "U1",
+          "pin": "1"
+        },
+        {
+          "ref": "C1",
+          "pin": "2"
+        },
+        {
+          "ref": "J1",
+          "pin": "3"
+        }
+      ]
+    },
+    {
+      "name": "DQ",
+      "connections": [
+        {
+          "ref": "U1",
+          "pin": "2"
+        },
+        {
+          "ref": "R1",
+          "pin": "2"
+        },
+        {
+          "ref": "J1",
+          "pin": "2"
+        }
+      ]
+    }
+  ]
+}

@@ -18,6 +18,8 @@
     generating: false,
     capabilities: null,
     templates: [],
+    templateCats: [],
+    templateCat: '全部',
     quickGroup: '',
     svgText: '',
     zoom: 1,
@@ -615,13 +617,38 @@
   }
 
   function renderTemplates() {
-    var list = $('#templateList'); list.innerHTML = '';
-    state.templates.forEach(function (t) {
+    // 分类筛选
+    var tabs = $('#templateTabs');
+    if (tabs) {
+      tabs.innerHTML = '';
+      var cats = [{ name: '全部', count: state.templates.length }].concat(state.templateCats || []);
+      cats.forEach(function (c) {
+        var b = document.createElement('button');
+        b.className = 'tpl-tab' + (state.templateCat === c.name ? ' active' : '');
+        b.textContent = c.name + ' ' + c.count;
+        b.onclick = function () { state.templateCat = c.name; renderTemplates(); };
+        tabs.appendChild(b);
+      });
+    }
+
+    var cnt = $('#templateCount');
+    var list = $('#templateList');
+    list.innerHTML = '';
+    var items = state.templates.filter(function (t) {
+      return state.templateCat === '全部' || t.category === state.templateCat;
+    });
+    if (cnt) cnt.textContent = items.length;
+    if (!items.length) {
+      list.innerHTML = '<div class="empty-drawer">该分类暂无板子</div>';
+      return;
+    }
+    items.forEach(function (t) {
       var card = document.createElement('button');
       card.className = 'template-card';
       card.innerHTML =
         '<span class="tc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h4"/></svg></span>' +
-        '<span class="tc-body"><span class="tc-name">' + esc(t.name) + '</span>' +
+        '<span class="tc-body"><span class="tc-name">' + esc(t.name) +
+        '<span class="tc-cat">' + esc(t.category || '') + '</span></span>' +
         '<span class="tc-desc">' + esc(t.description) + '</span>' +
         '<span class="tc-meta">' + t.components + ' 元件 · ' + t.nets + ' 网络</span></span>';
       card.onclick = function () { applyTemplate(t.id); };
@@ -978,6 +1005,7 @@
       var caps = await api('/api/capabilities');
       state.capabilities = caps;
       state.templates = caps.templates || [];
+      state.templateCats = caps.template_categories || [];
       renderQuick();
       renderTemplates();
       renderHelp();

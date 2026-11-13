@@ -52,6 +52,7 @@ def validate_design(design: dict) -> dict:
 
     cleaned_nets = []
     seen_nets = set()
+    used_pins = {}
     for net in nets:
         name = (net.get("name") or "").strip().upper().replace(" ", "_")
         if not name or name in seen_nets:
@@ -65,6 +66,12 @@ def validate_design(design: dict) -> dict:
                 continue
             if pin not in valid_pins[ref]:
                 raise DesignError(f"引脚无效: {ref}.{pin}（元件 {ref} 没有该引脚）")
+            key = (ref, pin)
+            # 同一个引脚出现在两个网络里 = 短路，必须拦下来
+            if key in used_pins and used_pins[key] != name:
+                raise DesignError(
+                    f"引脚 {ref}.{pin} 同时属于网络 {used_pins[key]} 与 {name}，会造成短路")
+            used_pins[key] = name
             conns.append({"ref": ref, "pin": pin})
         if conns:
             cleaned_nets.append({"name": name, "connections": conns})

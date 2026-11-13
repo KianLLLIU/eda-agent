@@ -7,6 +7,7 @@ from .pipeline import (
     build_project_files,
     package_project,
     list_templates,
+    list_template_categories,
     load_template_by_name,
 )
 from .validator import validate_design, DesignError
@@ -21,6 +22,7 @@ __all__ = [
     "build_project_files",
     "package_project",
     "list_templates",
+    "list_template_categories",
     "load_template_by_name",
     "validate_design",
     "DesignError",

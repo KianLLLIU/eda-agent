@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>EDA Agent · 板子库总览（23 块）</title>
+<style>
+  :root {
+    --bg: #070c16; --panel: #0d1524; --panel-2: #111c2f;
+    --line: rgba(148,163,184,.16); --text: #e6edf7; --muted: #93a4bd; --dim: #63748e;
+    --accent: #38bdf8; --accent-2: #34d399;
+    --mono: "JetBrains Mono","Cascadia Mono",Consolas,monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: "Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background-image: linear-gradient(rgba(148,163,184,.05) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(148,163,184,.05) 1px, transparent 1px);
+    background-size: 34px 34px;
+    -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+  }
+  .wrap { position: relative; z-index: 1; max-width: 1180px; margin: 0 auto; padding: 44px 24px 70px; }
+  header .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px; font-size: 12px; letter-spacing: .16em;
+    color: var(--accent); text-transform: uppercase; font-family: var(--mono);
+    border: 1px solid rgba(56,189,248,.32); background: rgba(56,189,248,.08);
+    padding: 5px 12px; border-radius: 999px;
+  }
+  h1 { font-size: clamp(28px, 4vw, 42px); margin: 18px 0 10px; letter-spacing: -.02em; }
+  h1 em {
+    font-style: normal; background: linear-gradient(100deg,#38bdf8,#34d399 70%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .lead { color: var(--muted); font-size: 15px; line-height: 1.75; max-width: 660px; margin: 0 0 26px; }
+  .stats { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 30px; }
+  .stat {
+    flex: 1 1 150px; background: linear-gradient(160deg, var(--panel-2), var(--panel));
+    border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px;
+  }
+  .stat b { display: block; font-size: 26px; font-family: var(--mono); letter-spacing: -.02em; }
+  .stat span { font-size: 12px; color: var(--dim); }
+  .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 20px; }
+  .tab {
+    font: inherit; font-size: 13px; color: var(--muted); cursor: pointer;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 999px;
+    padding: 7px 14px; transition: .18s;
+  }
+  .tab b { font-family: var(--mono); font-size: 11px; color: var(--dim); margin-left: 2px; }
+  .tab:hover { color: var(--text); border-color: rgba(56,189,248,.45); }
+  .tab.active { background: rgba(56,189,248,.14); border-color: rgba(56,189,248,.6); color: #bfe9ff; }
+  .tab.active b { color: var(--accent); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+  .card {
+    position: relative; background: linear-gradient(170deg, var(--panel-2), var(--panel) 60%);
+    border: 1px solid var(--line); border-radius: 16px; padding: 16px 17px 14px;
+    transition: transform .2s, border-color .2s, box-shadow .2s; overflow: hidden;
+  }
+  .card::after {
+    content: ""; position: absolute; inset: 0 0 auto 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0; transition: opacity .25s;
+  }
+  .card:hover {
+    transform: translateY(-3px); border-color: rgba(56,189,248,.4);
+    box-shadow: 0 16px 40px -22px rgba(56,189,248,.55);
+  }
+  .card:hover::after { opacity: 1; }
+  .card-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .cat {
+    font-size: 11px; color: var(--c); background: var(--s);
+    border: 1px solid var(--c); padding: 2px 8px; border-radius: 999px;
+  }
+  .meta { font-size: 11px; color: var(--dim); font-family: var(--mono); }
+  .card h3 { font-size: 15.5px; margin: 11px 0 7px; letter-spacing: -.01em; }
+  .card p { font-size: 12.5px; line-height: 1.66; color: var(--muted); margin: 0 0 12px; min-height: 62px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 5px; }
+  .chip {
+    font-size: 10.5px; font-family: var(--mono); color: #b9cbe0;
+    background: rgba(148,163,184,.09); border: 1px solid var(--line);
+    border-radius: 6px; padding: 2px 6px;
+  }
+  .card-foot { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--line); }
+  .card-foot code { font-size: 10.5px; color: var(--dim); font-family: var(--mono); }
+  footer {
+    margin-top: 40px; padding-top: 22px; border-top: 1px solid var(--line);
+    color: var(--dim); font-size: 12.5px; line-height: 1.9;
+  }
+  footer b { color: var(--muted); font-weight: 600; }
+  footer code { color: #9fb6cf; font-family: var(--mono); }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="eyebrow">EDA Agent · Board Library</span>
+    <h1>板子库 <em>23 块</em>，从灯板到传感器节点</h1>
+    <p class="lead">
+      每一块都能一键生成完整的 KiCad 工程：原理图（真实 wire / junction）+ PCB（官方封装焊盘与 3D 模型）
+      + BOM + 网表。左侧「板子库」可按分类筛选套用，也可以直接用一句话描述需求让 NLU 自动选板。
+    </p>
+    <div class="stats">
+      <div class="stat"><b>23</b><span>预置板子</span></div>
+      <div class="stat"><b>5</b><span>应用分类</span></div>
+      <div class="stat"><b>47</b><span>可用器件符号</span></div>
+      <div class="stat"><b>0</b><span>KiCad ERC / DRC 错误</span></div>
+    </div>
+  </header>
+
+  <div class="tabs"><button class="tab active" data-cat="全部">全部 <b>23</b></button><button class="tab" data-cat="电源">电源 <b>5</b></button><button class="tab" data-cat="LED 灯光">LED 灯光 <b>6</b></button><button class="tab" data-cat="传感器">传感器 <b>5</b></button><button class="tab" data-cat="驱动">驱动 <b>4</b></button><button class="tab" data-cat="接口">接口 <b>3</b></button></div>
+  <main class="grid">
+      <article class="card" data-cat="电源">
+        <div class="card-top">
+          <span class="cat" style="--c:#34d399;--s:rgba(52,211,153,.14)">电源</span>
+          <span class="meta">6 元件 · 3 网络</span>
+        </div>
+        <h3>5V 转 3.3V LDO 稳压</h3>
+        <p>AMS1117-3.3 线性稳压，含输入输出滤波电容与接线端子</p>
+        <div class="chips"><span class="chip">AMS1117-3.3</span><span class="chip">10uF</span><span class="chip">22uF</span><span class="chip">100nF</span><span class="chip">5V</span><span class="chip">3.3V</span></div>
+        <div class="card-foot"><code>ldo_3v3</code></div>
+      </article>
+      <article class="card" data-cat="电源">
+        <div class="card-top">
+          <span class="cat" style="--c:#34d399;--s:rgba(52,211,153,.14)">电源</span>
+          <span class="meta">6 元件 · 3 网络</span>
+        </div>
+        <h3>LM7805 5V 线性稳压</h3>
+        <p>经典 TO-220 三端稳压，100uF 输入输出储能 + 100nF 高频去耦</p>
+        <div class="chips"><span class="chip">LM7805</span><span class="chip">100uF</span><span class="chip">100nF</span><span class="chip">7~12V</span><span class="chip">5V</span></div>
+        <div class="card-foot"><code>ldo_5v_7805</code></div>
+      </article>
+      <article class="card" data-cat="电源">
+        <div class="card-top">
+          <span class="cat" style="--c:#34d399;--s:rgba(52,211,153,.14)">电源</span>
+          <span class="meta">8 元件 · 4 网络</span>
+        </div>
+        <h3>LM2596 5V 2A 降压</h3>
+        <p>开关降压方案：33uH 储能电感 + SS34 续流肖特基 + 反馈取样</p>
+        <div class="chips"><span class="chip">LM2596S-5.0</span><span class="chip">33uH</span><span class="chip">SS34</span><span class="chip">220uF</span><span class="chip">100nF</span><span class="chip">8~36V</span></div>
+        <div class="card-foot"><code>buck_lm2596</code></div>
+      </article>
+      <article class="card" data-cat="电源">
+        <div class="card-top">
+          <span class="cat" style="--c:#34d399;--s:rgba(52,211,153,.14)">电源</span>
+          <span class="meta">11 元件 · 8 网络</span>
+        </div>
+        <h3>TP4056 锂电充电板</h3>
+        <p>1A 恒流恒压充电，1.2k 设定电流，充电/充满双色状态灯</p>
+        <div class="chips"><span class="chip">TP4056</span><span class="chip">1.2k</span><span class="chip">1k</span><span class="chip">红</span><span class="chip">蓝</span><span class="chip">10uF</span></div>
+        <div class="card-foot"><code>tp4056_charger</code></div>
+      </article>
+      <article class="card" data-cat="电源">
+        <div class="card-top">
+          <span class="cat" style="--c:#34d399;--s:rgba(52,211,153,.14)">电源</span>
+          <span class="meta">9 元件 · 4 网络</span>
+        </div>
+        <h3>5V / 3.3V 双路电源</h3>
+        <p>LM7805 一级降压 + AMS1117 二级稳压，单片机与传感器常用供电</p>
+        <div class="chips"><span class="chip">LM7805</span><span class="chip">AMS1117-3.3</span><span class="chip">100uF</span><span class="chip">100nF</span><span class="chip">10uF</span><span class="chip">22uF</span></div>
+        <div class="card-foot"><code>power_5v_3v3</code></div>
+      </article>
+      <article class="card" data-cat="LED 灯光">
+        <div class="card-top">
+          <span class="cat" style="--c:#fbbf24;--s:rgba(251,191,36,.14)">LED 灯光</span>
+          <span class="meta">3 元件 · 3 网络</span>
+        </div>
+        <h3>LED 指示灯电路</h3>
+        <p>电源指示灯 + 限流电阻，元件最少，适合入门与快速验证</p>
+        <div class="chips"><span class="chip">330</span><span class="chip">绿色</span><span class="chip">电源</span></div>
+        <div class="card-foot"><code>led_indicator</code></div>
+      </article>
+      <article class="card" data-cat="LED 灯光">
+        <div class="card-top">
+          <span class="cat" style="--c:#fbbf24;--s:rgba(251,191,36,.14)">LED 灯光</span>
+          <span class="meta">10 元件 · 7 网络</span>
+        </div>
+        <h3>LED 闪烁电路</h3>
+        <p>ATmega328P 最小系统 + 晶振 + 复位 + LED 闪烁，完整 MCU 电路</p>
+        <div class="chips"><span class="chip">ATmega328P</span><span class="chip">16MHz</span><span class="chip">22pF</span><span class="chip">100nF</span><span class="chip">10k</span><span class="chip">220</span></div>
+        <div class="card-foot"><code>led_blink</code></div>
+      </article>
+      <article class="card" data-cat="LED 灯光">
+        <div class="card-top">
+          <span class="cat" style="--c:#fbbf24;--s:rgba(251,191,36,.14)">LED 灯光</span>
+          <span class="meta">8 元件 · 7 网络</span>
+        </div>
+        <h3>NE555 无稳态闪灯</h3>
+        <p>555 多谐振荡器闪灯，电阻电容决定频率，纯硬件无需编程</p>
+        <div class="chips"><span class="chip">NE555P</span><span class="chip">10k</span><span class="chip">100k</span><span class="chip">10uF</span><span class="chip">100nF</span><span class="chip">470</span></div>
+        <div class="card-foot"><code>led_flash_555</code></div>
+      </article>
+      <article class="card" data-cat="LED 灯光">
+        <div class="card-top">
+          <span class="cat" style="--c:#fbbf24;--s:rgba(251,191,36,.14)">LED 灯光</span>
+          <span class="meta">19 元件 · 18 网络</span>
+        </div>
+        <h3>CD4017 六路流水灯</h3>
+        <p>555 提供时钟 + 4017 十进制计数，六路 LED 依次点亮，可用电位器调速</p>
+        <div class="chips"><span class="chip">NE555P</span><span class="chip">CD4017BE</span><span class="chip">1k</span><span class="chip">100k</span><span class="chip">10uF</span><span class="chip">100nF</span></div>
+        <div class="card-foot"><code>led_chaser_4017</code></div>
+      </article>
+      <article class="card" data-cat="LED 灯光">
+        <div class="card-top">
+          <span class="cat" style="--c:#fbbf24;--s:rgba(251,191,36,.14)">LED 灯光</span>
+          <span class="meta">7 元件 · 7 网络</span>
+        </div>
+        <h3>RGB 三色灯板</h3>
+        <p>共阴 RGB 灯珠，红绿蓝三路独立限流，四线接口直接接 MCU</p>
+        <div class="chips"><span class="chip">红</span><span class="chip">绿</span><span class="chip">蓝</span><span class="chip">220</span><span class="chip">150</span><span class="chip">R</span></div>
+        <div class="card-foot"><code>rgb_led_board</code></div>
+      </article>
+      <article class="card" data-cat="LED 灯光">
+        <div class="card-top">
+          <span class="cat" style="--c:#fbbf24;--s:rgba(251,191,36,.14)">LED 灯光</span>
+          <span class="meta">6 元件 · 5 网络</span>
+        </div>
+        <h3>MOSFET 灯带调光</h3>
+        <p>AO3400 低边开关驱动 12V 灯带，支持 PWM 调光，栅极带下拉与滤波</p>
+        <div class="chips"><span class="chip">AO3400</span><span class="chip">100</span><span class="chip">10k</span><span class="chip">100nF</span><span class="chip">12V</span><span class="chip">灯带</span></div>
+        <div class="card-foot"><code>led_strip_mosfet</code></div>
+      </article>
+      <article class="card" data-cat="传感器">
+        <div class="card-top">
+          <span class="cat" style="--c:#38bdf8;--s:rgba(56,189,248,.14)">传感器</span>
+          <span class="meta">6 元件 · 4 网络</span>
+        </div>
+        <h3>DHT11 温湿度板</h3>
+        <p>DHT11 温湿度模块，10k 数据上拉 + 100nF 去耦 + 电源指示</p>
+        <div class="chips"><span class="chip">DHT11</span><span class="chip">10k</span><span class="chip">100nF</span><span class="chip">1k</span><span class="chip">绿</span><span class="chip">VCC</span></div>
+        <div class="card-foot"><code>dht11_sensor</code></div>
+      </article>
+      <article class="card" data-cat="传感器">
+        <div class="card-top">
+          <span class="cat" style="--c:#38bdf8;--s:rgba(56,189,248,.14)">传感器</span>
+          <span class="meta">4 元件 · 3 网络</span>
+        </div>
+        <h3>DS18B20 测温板</h3>
+        <p>单总线数字测温，4.7k 上拉电阻，TO-92 直插封装</p>
+        <div class="chips"><span class="chip">DS18B20</span><span class="chip">4.7k</span><span class="chip">100nF</span><span class="chip">VCC</span></div>
+        <div class="card-foot"><code>ds18b20_sensor</code></div>
+      </article>
+      <article class="card" data-cat="传感器">
+        <div class="card-top">
+          <span class="cat" style="--c:#38bdf8;--s:rgba(56,189,248,.14)">传感器</span>
+          <span class="meta">5 元件 · 5 网络</span>
+        </div>
+        <h3>HC-SR04 超声波板</h3>
+        <p>超声波测距模块，Echo 5V 输出用 1k/2k 分压成 3.3V 电平</p>
+        <div class="chips"><span class="chip">HC-SR04</span><span class="chip">1k</span><span class="chip">2k</span><span class="chip">100nF</span><span class="chip">VCC</span></div>
+        <div class="card-foot"><code>hcsr04_ultrasonic</code></div>
+      </article>
+      <article class="card" data-cat="传感器">
+        <div class="card-top">
+          <span class="cat" style="--c:#38bdf8;--s:rgba(56,189,248,.14)">传感器</span>
+          <span class="meta">9 元件 · 6 网络</span>
+        </div>
+        <h3>光控开关（LM393）</h3>
+        <p>光敏电阻分压 + LM393 比较，电位器调阈值，输出带指示灯</p>
+        <div class="chips"><span class="chip">LM393</span><span class="chip">GL5528</span><span class="chip">10k</span><span class="chip">1k</span><span class="chip">红</span><span class="chip">100nF</span></div>
+        <div class="card-foot"><code>ldr_light_switch</code></div>
+      </article>
+      <article class="card" data-cat="传感器">
+        <div class="card-top">
+          <span class="cat" style="--c:#38bdf8;--s:rgba(56,189,248,.14)">传感器</span>
+          <span class="meta">11 元件 · 8 网络</span>
+        </div>
+        <h3>MQ-2 气体报警板</h3>
+        <p>可燃气体检测，LM393 比较阈值后驱动蜂鸣器与红灯，可输出报警信号</p>
+        <div class="chips"><span class="chip">MQ-2</span><span class="chip">LM393</span><span class="chip">10k</span><span class="chip">1k</span><span class="chip">S8050</span><span class="chip">5V</span></div>
+        <div class="card-foot"><code>mq2_gas_alarm</code></div>
+      </article>
+      <article class="card" data-cat="驱动">
+        <div class="card-top">
+          <span class="cat" style="--c:#f472b6;--s:rgba(244,114,182,.14)">驱动</span>
+          <span class="meta">9 元件 · 9 网络</span>
+        </div>
+        <h3>继电器驱动板</h3>
+        <p>S8050 三极管驱动 SRD-05VDC 继电器，1N4148 续流 + 吸合指示灯</p>
+        <div class="chips"><span class="chip">S8050</span><span class="chip">1k</span><span class="chip">10k</span><span class="chip">1N4148</span><span class="chip">SRD-05VDC-SL-C</span><span class="chip">绿</span></div>
+        <div class="card-foot"><code>relay_driver</code></div>
+      </article>
+      <article class="card" data-cat="驱动">
+        <div class="card-top">
+          <span class="cat" style="--c:#f472b6;--s:rgba(244,114,182,.14)">驱动</span>
+          <span class="meta">5 元件 · 10 网络</span>
+        </div>
+        <h3>ULN2003 步进电机</h3>
+        <p>达林顿阵列驱动 28BYJ-48 五线步进电机，四路输入直接接 MCU</p>
+        <div class="chips"><span class="chip">ULN2003A</span><span class="chip">100nF</span><span class="chip">IN1~IN4</span><span class="chip">电机</span><span class="chip">5V</span></div>
+        <div class="card-foot"><code>uln2003_stepper</code></div>
+      </article>
+      <article class="card" data-cat="驱动">
+        <div class="card-top">
+          <span class="cat" style="--c:#f472b6;--s:rgba(244,114,182,.14)">驱动</span>
+          <span class="meta">8 元件 · 6 网络</span>
+        </div>
+        <h3>蜂鸣器驱动板</h3>
+        <p>有源蜂鸣器 + NPN 驱动，基极限流下拉、续流二极管、状态灯齐全</p>
+        <div class="chips"><span class="chip">S8050</span><span class="chip">1k</span><span class="chip">10k</span><span class="chip">5V</span><span class="chip">1N4148</span><span class="chip">红</span></div>
+        <div class="card-foot"><code>buzzer_alarm</code></div>
+      </article>
+      <article class="card" data-cat="驱动">
+        <div class="card-top">
+          <span class="cat" style="--c:#f472b6;--s:rgba(244,114,182,.14)">驱动</span>
+          <span class="meta">8 元件 · 8 网络</span>
+        </div>
+        <h3>LM386 音频功放</h3>
+        <p>音频功放，电位器调音量，输入输出耦合电容 + 电源旁路</p>
+        <div class="chips"><span class="chip">LM386N-1</span><span class="chip">10k</span><span class="chip">10uF</span><span class="chip">100nF</span><span class="chip">220uF</span><span class="chip">5V</span></div>
+        <div class="card-foot"><code>lm386_amp</code></div>
+      </article>
+      <article class="card" data-cat="接口">
+        <div class="card-top">
+          <span class="cat" style="--c:#a78bfa;--s:rgba(167,139,250,.14)">接口</span>
+          <span class="meta">10 元件 · 7 网络</span>
+        </div>
+        <h3>ESP-01 WiFi 底板</h3>
+        <p>ESP-01S 转接板：AMS1117 3.3V 供电、复位按键、串口与使能上拉</p>
+        <div class="chips"><span class="chip">ESP-01S</span><span class="chip">AMS1117-3.3</span><span class="chip">10uF</span><span class="chip">100nF</span><span class="chip">22uF</span><span class="chip">10k</span></div>
+        <div class="card-foot"><code>esp01_wifi</code></div>
+      </article>
+      <article class="card" data-cat="接口">
+        <div class="card-top">
+          <span class="cat" style="--c:#a78bfa;--s:rgba(167,139,250,.14)">接口</span>
+          <span class="meta">8 元件 · 7 网络</span>
+        </div>
+        <h3>MAX485 通信接口</h3>
+        <p>RS-485 收发器，120R 终端电阻 + 总线偏置，DE/RE 方向控制引出</p>
+        <div class="chips"><span class="chip">MAX485</span><span class="chip">120</span><span class="chip">10k</span><span class="chip">100nF</span><span class="chip">VCC</span><span class="chip">A</span></div>
+        <div class="card-foot"><code>max485_rs485</code></div>
+      </article>
+      <article class="card" data-cat="接口">
+        <div class="card-top">
+          <span class="cat" style="--c:#a78bfa;--s:rgba(167,139,250,.14)">接口</span>
+          <span class="meta">5 元件 · 4 网络</span>
+        </div>
+        <h3>I2C OLED 接口板</h3>
+        <p>0.96 寸 SSD1306 屏座，4.7k I2C 上拉与去耦电容</p>
+        <div class="chips"><span class="chip">0.96</span><span class="chip">4.7k</span><span class="chip">100nF</span><span class="chip">VCC</span></div>
+        <div class="card-foot"><code>i2c_oled</code></div>
+      </article>
+  </main>
+
+  <footer>
+    <b>复验方式</b>：<code>python scripts/validate_templates.py</code> —— 逐块生成工程并调用
+    <code>kicad-cli</code> 做 ERC / DRC / SVG 导出，全部 0 错误。<br />
+    <b>生成方式</b>：左侧板子库点选，或对话里说「做一个 MQ-2 气体报警板」「画一个 RS485 通信接口板」。<br />
+    <b>说明</b>：PCB 做元件布局与网络飞线，不自动布线；打开 KiCad 后可一键自动布线或手动走线。
+  </footer>
+</div>
+<script>
+  var tabs = document.querySelectorAll('.tab');
+  var cards = document.querySelectorAll('.card');
+  tabs.forEach(function (t) {
+    t.addEventListener('click', function () {
+      tabs.forEach(function (x) { x.classList.remove('active'); });
+      t.classList.add('active');
+      var c = t.dataset.cat;
+      cards.forEach(function (card) {
+        card.classList.toggle('hidden', c !== '全部' && card.dataset.cat !== c);
+      });
+    });
+  });
+</script>
+</body>
+</html>

@@ -31,7 +31,7 @@ OUTPUT_DIR = os.environ.get("EDA_AGENT_OUTPUT", DEFAULT_OUTPUT)
 USER_DATA_DIR = os.environ.get("EDA_AGENT_DATA", os.path.join(os.path.expanduser("~"), ".eda-agent"))
 
 APP_NAME = "EDA Agent"
-APP_VERSION = "2.0.5"
+APP_VERSION = "2.1.0"
 IS_FROZEN = _is_frozen()
 
 # ---------------------------------------------------------------------------

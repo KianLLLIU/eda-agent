@@ -1,0 +1,219 @@
+{
+  "title": "LM386 音频功放板（20 倍增益）",
+  "company": "SDU",
+  "revision": "1.0",
+  "paper": "A4",
+  "groups": [
+    {
+      "name": "输入音量",
+      "refs": [
+        "J1",
+        "RV1",
+        "C1"
+      ]
+    },
+    {
+      "name": "功放",
+      "refs": [
+        "U1",
+        "C2",
+        "C4"
+      ]
+    },
+    {
+      "name": "输出耦合",
+      "refs": [
+        "C3",
+        "J2"
+      ]
+    }
+  ],
+  "components": [
+    {
+      "ref": "U1",
+      "lib": "Amplifier_Audio",
+      "symbol": "LM386",
+      "value": "LM386N-1",
+      "footprint": "Package_DIP:DIP-8_W7.62mm"
+    },
+    {
+      "ref": "RV1",
+      "lib": "Device",
+      "symbol": "R_Potentiometer",
+      "value": "10k 音量",
+      "footprint": "Potentiometer_THT:Potentiometer_Alps_RK09K_Single_Horizontal"
+    },
+    {
+      "ref": "C1",
+      "lib": "Device",
+      "symbol": "CP",
+      "value": "10uF 输入耦合",
+      "footprint": "Capacitor_SMD:CP_Elec_6.3x5.4"
+    },
+    {
+      "ref": "C2",
+      "lib": "Device",
+      "symbol": "C",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric"
+    },
+    {
+      "ref": "C3",
+      "lib": "Device",
+      "symbol": "CP",
+      "value": "220uF 输出耦合",
+      "footprint": "Capacitor_SMD:CP_Elec_6.3x5.4"
+    },
+    {
+      "ref": "C4",
+      "lib": "Device",
+      "symbol": "CP",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:CP_Elec_6.3x5.4"
+    },
+    {
+      "ref": "J1",
+      "lib": "Connector_Generic",
+      "symbol": "Conn_01x03",
+      "value": "5V / AUDIO / GND",
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical"
+    },
+    {
+      "ref": "J2",
+      "lib": "Connector_Generic",
+      "symbol": "Conn_01x02",
+      "value": "扬声器 +/-",
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical"
+    }
+  ],
+  "nets": [
+    {
+      "name": "VCC",
+      "connections": [
+        {
+          "ref": "J1",
+          "pin": "1"
+        },
+        {
+          "ref": "U1",
+          "pin": "6"
+        },
+        {
+          "ref": "C2",
+          "pin": "1"
+        }
+      ]
+    },
+    {
+      "name": "GND",
+      "connections": [
+        {
+          "ref": "J1",
+          "pin": "3"
+        },
+        {
+          "ref": "U1",
+          "pin": "4"
+        },
+        {
+          "ref": "U1",
+          "pin": "2"
+        },
+        {
+          "ref": "RV1",
+          "pin": "3"
+        },
+        {
+          "ref": "C2",
+          "pin": "2"
+        },
+        {
+          "ref": "C4",
+          "pin": "2"
+        },
+        {
+          "ref": "J2",
+          "pin": "2"
+        }
+      ]
+    },
+    {
+      "name": "AUDIO",
+      "connections": [
+        {
+          "ref": "J1",
+          "pin": "2"
+        },
+        {
+          "ref": "RV1",
+          "pin": "1"
+        }
+      ]
+    },
+    {
+      "name": "POT_OUT",
+      "connections": [
+        {
+          "ref": "RV1",
+          "pin": "2"
+        },
+        {
+          "ref": "C1",
+          "pin": "1"
+        }
+      ]
+    },
+    {
+      "name": "IN_P",
+      "connections": [
+        {
+          "ref": "C1",
+          "pin": "2"
+        },
+        {
+          "ref": "U1",
+          "pin": "3"
+        }
+      ]
+    },
+    {
+      "name": "BYPASS",
+      "connections": [
+        {
+          "ref": "U1",
+          "pin": "7"
+        },
+        {
+          "ref": "C4",
+          "pin": "1"
+        }
+      ]
+    },
+    {
+      "name": "OUT",
+      "connections": [
+        {
+          "ref": "U1",
+          "pin": "5"
+        },
+        {
+          "ref": "C3",
+          "pin": "1"
+        }
+      ]
+    },
+    {
+      "name": "SPK",
+      "connections": [
+        {
+          "ref": "C3",
+          "pin": "2"
+        },
+        {
+          "ref": "J2",
+          "pin": "1"
+        }
+      ]
+    }
+  ]
+}

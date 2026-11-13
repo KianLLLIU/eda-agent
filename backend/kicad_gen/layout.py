@@ -230,28 +230,64 @@ def compute_layout(design, max_cols=MAX_COLS, title_h=TITLE_H,
             p["stub_x"] = x
             used_stub_x.append((x, name))
 
-    # ---- 水平通道：x 区间不重叠的网络共用一条 lane（贪心区间着色）----
-    # 这样网络多时不会把图拉得过高，垂直支线之间的交叉也更少。
+    # ---- 水平通道分配 ----
+    # 旧方案把所有通道排在图的最下方，元件区靠上的网络就要拉一条贯穿全图的
+    # 竖线，几十个元件时整张图像「一片栅栏」。现在改成两级通道：
+    #   ① 每个模块框下方的空隙里放 1~3 条通道（就近布线，竖线只走一格）；
+    #   ② 所有模块都放不下的网络才落到图底部的通栏区。
+    # 同一 y 上的通道仍按 x 区间着色，不会互相压线；不同 y 之间互不影响。
     lanes = {}
+    band_spans = {}              # y -> [(left, right)]
+
+    def _center_x(item):
+        name, pts = item
+        return (sum(p["stub_x"] for p in pts) / len(pts)) if pts else x_origin
+
+    cand_ys = []
+    for gname in group_order:
+        box = group_boxes.get(gname)
+        if not box:
+            continue
+        # 框下方可用空间 = group_gap - (上 padding + 下 padding)，通道居中摆放，
+        # 避免压在模块虚线框上
+        room = group_gap - GROUP_PAD_BOTTOM - GROUP_PAD_TOP
+        n_fit = max(1, int((room - 2.0) // lane_gap))
+        first = box[3] + max(2.0, (room - (n_fit - 1) * lane_gap) / 2.0)
+        for k in range(n_fit):
+            cand_ys.append(snap(first + k * lane_gap))
     lane_base = content_bottom + LANE_TOP_GAP
-    lane_intervals = []          # 每条 lane 上已占用的 (left, right) 区间
-    for name, pts in net_points.items():
+    for k in range(12):
+        cand_ys.append(snap(lane_base + k * lane_gap))
+    # 去重：不同来源算出的候选 y 可能只差一两毫米，太近会让相邻两条通道的
+    # 网络名叠在一起
+    cand_ys = sorted(set(cand_ys))
+    spaced = []
+    for y in cand_ys:
+        if not spaced or y - spaced[-1] >= lane_gap * 0.9:
+            spaced.append(y)
+    cand_ys = spaced
+
+    # 从右往左分配：右侧网络走靠下的通道，竖线扇形散开不打架
+    for name, pts in sorted(net_points.items(), key=_center_x, reverse=True):
         xs = [p["stub_x"] for p in pts]
         left = (min(xs) - 2.6) if xs else x_origin
         right = (max(xs) + 2.6) if xs else x_origin + 10
-        placed = False
-        for i, spans in enumerate(lane_intervals):
+        need = (max(p["y"] for p in pts) if pts else content_bottom) + 2.0
+        chosen = None
+        for y in cand_ys:
+            if y < need:
+                continue
+            spans = band_spans.setdefault(y, [])
             if all(left > r + 1.0 or right < l - 1.0 for (l, r) in spans):
                 spans.append((left, right))
-                lanes[name] = snap(lane_base + i * lane_gap)
-                placed = True
+                chosen = y
                 break
-        if not placed:
-            lane_intervals.append([(left, right)])
-            lanes[name] = snap(lane_base + (len(lane_intervals) - 1) * lane_gap)
+        if chosen is None:                       # 兜底：接在最后一条下面
+            chosen = snap((max(lanes.values()) if lanes else lane_base) + lane_gap)
+            band_spans.setdefault(chosen, []).append((left, right))
+        lanes[name] = chosen
 
-    lane_bottom = (lane_base + (len(lane_intervals) - 1) * lane_gap
-                   if lane_intervals else lane_base)
+    lane_bottom = (max(lanes.values()) if lanes else lane_base)
     right_edge = max_right
     for pts in net_points.values():
         for p in pts:

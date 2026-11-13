@@ -195,7 +195,7 @@ def _module_rect_s(x1, y1, x2, y2, name, lx, ly):
 # ---------------------------------------------------------------------------
 # 布局（委托统一引擎，保留旧签名给外部调用）
 # ---------------------------------------------------------------------------
-SCH_LAYOUT = dict(max_cols=4, title_h=6, group_gap=22, lane_gap=5.08)
+SCH_LAYOUT = dict(max_cols=4, title_h=6, group_gap=30, lane_gap=4.0)
 
 
 def layout_components(design):
@@ -205,12 +205,23 @@ def layout_components(design):
 
 
 def _pick_paper(width, height):
-    """按内容范围选纸张；原理图不需要 SVG 的标题栏/页脚，按实际内容估算。"""
+    """按内容范围选纸张；原理图不需要 SVG 的标题栏/页脚，按实际内容估算。
+
+    内容比纸宽高很多时（元件少但网络通道多），竖版纸能把图放满，
+    避免左半边画电路、右半边一片空白。
+    """
+    portrait = height > width * 1.12
+    if portrait:
+        if width <= 200 and height <= 287:
+            return "A4", True
+        if width <= 287 and height <= 410:
+            return "A3", True
+        return "A2", True
     if width <= 287 and height <= 200:
-        return "A4"
+        return "A4", False
     if width <= 410 and height <= 300:
-        return "A3"
-    return "A2"
+        return "A3", False
+    return "A2", False
 
 
 # ---------------------------------------------------------------------------
@@ -297,14 +308,15 @@ def build_schematic(design):
         module_s += _module_rect_s(x1, y1, x2, y2, gname, snap(x1 + 2.54), snap(y1 + 4.2))
 
     # 减去 SVG 专用的页脚/页边距，按原理图实际内容高度选纸
-    paper = _pick_paper(lay["bounds"][2] - 14.0, lay["lane_bottom"] + 12.0)
+    paper, portrait = _pick_paper(lay["bounds"][2] - 14.0, lay["lane_bottom"] + 12.0)
+    paper_s = '"%s" portrait' % paper if portrait else '"%s"' % paper
 
     sch = f"""(kicad_sch
   (version {KICAD_SCH_VERSION})
   (generator "eda-agent")
   (generator_version "2.0.4")
   (uuid "{_u()}")
-  (paper "{paper}")
+  (paper {paper_s})
   (title_block
     (title "{title}")
     (rev "1.0")
