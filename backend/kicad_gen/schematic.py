@@ -2,23 +2,32 @@
 """
 JSON 电路描述 → KiCad 原理图 (.kicad_sch)
 
-采用「网络标签连接、零导线」方案（与 KiCad 实测约束一致）：
-  - 每个引脚旁放置与其网络同名的 net label，同名 label 即电气相连
-  - 不画任何 wire/junction，避免连线错误
-  - power 符号（GND/VCC）不实例化，电源网络同样用 label 表达
+v2.0.4 重做：从「零导线 + 每个引脚一个标签」改为「真实导线连接」。
 
-输出为 KiCad 8 兼容的 s-expression 格式（version 20231120），
-KiCad 8/9/10 均可直接打开。
+旧版问题（用户反馈「连线丢失、挤成一坨、图不清楚」）：
+  · 整个文件 wire=0 / junction=0，只有网络标签，KiCad 里自然看不到任何连线；
+  · 每个引脚都放一个同名 label，13 个连接 → 13 个文字挤在几十毫米内互相重叠；
+  · Reference/Value 固定放在 cy±2.54，大符号（ATmega328P 高约 71mm）会压在图形中间。
+
+现在的方案：
+  · 每条网络：引脚 → 水平 stub → 垂直支线 → 水平主干，全部真实 (wire)，
+    T 型交点加 (junction)，主干上只放 1 个 (label) 命名该网络；
+  · 主干通道由统一布局引擎分配在元件区下方，x 区间不重叠的网络复用通道；
+  · 元件属性按符号包围盒放到图形外侧，模块框用布局引擎算好的不重叠矩形；
+  · 纸张按内容范围自动选 A4 / A3 / A2，避免内容跑出页面。
+
+格式仍为 KiCad 8 兼容的 s-expression（version 20231120），
+已用 KiCad 10.0.7 的 kicad-cli（export svg + erc）实测。
 """
 
 from __future__ import annotations
 
-import uuid
 import math
+import uuid
 
-from .symbols import get_symbol, SYMBOL_LIB
+from .symbols import get_symbol
 
-GRID = 1.27  # 50mil 连接网格
+GRID = 1.27
 KICAD_SCH_VERSION = 20231120
 
 
@@ -27,12 +36,11 @@ def _u():
 
 
 def snap(v):
-    """对齐到 1.27mm 网格"""
+    """对齐到 1.27mm 网格（KiCad wire 端点必须落在网格上）"""
     return round(round(v / GRID) * GRID, 3)
 
 
 def _fmt(v):
-    """格式化浮点数：去掉多余小数点"""
     if isinstance(v, (int, float)):
         if abs(v - round(v)) < 1e-9:
             return str(int(round(v)))
@@ -40,22 +48,25 @@ def _fmt(v):
     return str(v)
 
 
+def _esc(s):
+    return str(s if s is not None else "").replace("\\", "\\\\").replace('"', '\\"')
+
+
 # ---------------------------------------------------------------------------
-# 符号实例相关
+# 坐标与包围盒
 # ---------------------------------------------------------------------------
 def pin_world(comp_x, comp_y, rot, px, py):
-    """符号局部坐标 (px,py) → 原理图世界坐标。局部 y 向上、原理图 y 向下，需翻转。"""
-    # 仅支持 rotation=0 的简单情形（符号均已水平定义）
+    """符号局部坐标 → 画布世界坐标（局部 y 向上、原理图 y 向下）"""
     rad = math.radians(rot)
     cos, sin = math.cos(rad), math.sin(rad)
-    dy = -py  # 局部 y 翻转
+    dy = -py
     wx = px * cos + dy * sin
     wy = -px * sin + dy * cos
     return snap(comp_x + wx), snap(comp_y + wy)
 
 
 def symbol_bbox(sym):
-    """估算符号包围盒（宽、高），用于布局"""
+    """估算符号包围盒（宽、高），包含所有引脚与图形"""
     maxx = maxy = 0.0
     for (_, _, _, px, py, _, _) in sym["pins"]:
         maxx = max(maxx, abs(px))
@@ -73,15 +84,15 @@ def symbol_bbox(sym):
 
 
 # ---------------------------------------------------------------------------
-# s-expression 生成
+# s-expression 片段
 # ---------------------------------------------------------------------------
 def _pin_s(pin):
     num, name, etype, px, py, angle, length = pin
     return (
         f'        (pin {etype} line (at {_fmt(px)} {_fmt(py)} {angle}) '
         f'(length {_fmt(length)}) '
-        f'(name "{name}" (effects (font (size 1.27 1.27)))) '
-        f'(number "{num}" (effects (font (size 1.27 1.27)))))\n'
+        f'(name "{_esc(name)}" (effects (font (size 1.27 1.27)))) '
+        f'(number "{_esc(num)}" (effects (font (size 1.27 1.27)))))\n'
     )
 
 
@@ -93,7 +104,6 @@ def _graphics_s(g):
                 f'(end {_fmt(x2)} {_fmt(y2)}) '
                 f'(stroke (width 0.254) (type default)) (fill (type none)))\n')
     if kind == "line":
-        # KiCad 要求每个顶点单独一个 (xy x y)，不能写成 (xy x1 y1 x2 y2 ...)
         pts = " ".join(f"(xy {_fmt(x)} {_fmt(y)})" for (x, y) in g[1])
         return (f'      (polyline (pts {pts}) '
                 f'(stroke (width 0.254) (type default)) (fill (type none)))\n')
@@ -101,133 +111,212 @@ def _graphics_s(g):
 
 
 def _lib_symbol_s(lib_id, sym):
-    """生成 lib_symbols 中的一个 symbol 定义"""
     s = f'    (symbol "{lib_id}" (pin_numbers hide) (pin_names (offset 0.254)) (in_bom yes) (on_board yes)\n'
     s += '      (property "Reference" "U" (at 0 1.27 0) (effects (font (size 1.27 1.27))))\n'
     s += '      (property "Value" "VAL" (at 0 -1.27 0) (effects (font (size 1.27 1.27))))\n'
     s += '      (property "Footprint" "" (at 0 0 0) (effects (font (size 1.27 1.27)) hide))\n'
     s += '      (property "Datasheet" "" (at 0 0 0) (effects (font (size 1.27 1.27)) hide))\n'
-    # 图形 + 引脚
     inner = "".join(_graphics_s(g) for g in sym["graphics"])
     inner += "".join(_pin_s(p) for p in sym["pins"])
-    s += f'      (symbol "{lib_id.split(":")[1]}_0_1"\n{inner}      )\n'
+    s += f'      (symbol "{_esc(lib_id.split(":")[1])}_0_1"\n{inner}      )\n'
     s += "    )\n"
     return s
 
 
 def _symbol_instance_s(comp, cx, cy, sym):
-    """生成一个 symbol 实例（含 property 与 pin 子元素）"""
+    """元件实例；Reference/Value 放到符号包围盒外侧，不再压在图形上。"""
     lib_id = f'{comp["lib"]}:{comp["symbol"]}'
-    value = comp.get("value", "")
-    footprint = comp.get("footprint", "")
-    ref = comp["ref"]
-    s = f'  (symbol (lib_id "{lib_id}") (at {_fmt(cx)} {_fmt(cy)} 0) (unit 1) '
+    value = _esc(comp.get("value", ""))
+    footprint = _esc(comp.get("footprint", ""))
+    ref = _esc(comp["ref"])
+    _, h = symbol_bbox(sym)
+    ref_y = snap(cy - h / 2 - 1.27)      # 符号上方
+    value_y = snap(cy + h / 2 + 2.54)    # 符号下方
+
+    s = f'  (symbol (lib_id "{_esc(lib_id)}") (at {_fmt(cx)} {_fmt(cy)} 0) (unit 1) '
     s += '(in_bom yes) (on_board yes) (fields_autoplaced yes) (uuid "{}")\n'.format(_u())
-    s += f'    (property "Reference" "{ref}" (at {_fmt(cx)} {_fmt(cy + 2.54)} 0) (effects (font (size 1.27 1.27))))\n'
-    s += f'    (property "Value" "{value}" (at {_fmt(cx)} {_fmt(cy - 2.54)} 0) (effects (font (size 1.27 1.27))))\n'
+    s += f'    (property "Reference" "{ref}" (at {_fmt(cx)} {_fmt(ref_y)} 0) (effects (font (size 1.27 1.27))))\n'
+    s += f'    (property "Value" "{value}" (at {_fmt(cx)} {_fmt(value_y)} 0) (effects (font (size 1.27 1.27))))\n'
     s += f'    (property "Footprint" "{footprint}" (at {_fmt(cx)} {_fmt(cy)} 0) (effects (font (size 1.27 1.27)) hide))\n'
-    s += '    (property "Datasheet" "" (at {} {} 0) (effects (font (size 1.27 1.27)) hide))\n'.format(_fmt(cx), _fmt(cy))
+    s += f'    (property "Datasheet" "" (at {_fmt(cx)} {_fmt(cy)} 0) (effects (font (size 1.27 1.27)) hide))\n'
     for p in sym["pins"]:
-        s += f'    (pin "{p[0]}" (uuid "{_u()}"))\n'
+        s += f'    (pin "{_esc(p[0])}" (uuid "{_u()}"))\n'
     s += "  )\n"
     return s
 
 
+def _wire_s(x1, y1, x2, y2):
+    """一段真实导线（KiCad 9/10 格式）"""
+    if abs(x1 - x2) < 1e-6 and abs(y1 - y2) < 1e-6:
+        return ""
+    return (
+        "  (wire\n"
+        f"    (pts (xy {_fmt(x1)} {_fmt(y1)}) (xy {_fmt(x2)} {_fmt(y2)}))\n"
+        "    (stroke (width 0) (type default))\n"
+        f'    (uuid "{_u()}")\n'
+        "  )\n"
+    )
+
+
+def _junction_s(x, y):
+    """T 型交点：让支线与主干在电气上真正连通"""
+    return (
+        "  (junction\n"
+        f"    (at {_fmt(x)} {_fmt(y)})\n"
+        "    (diameter 1.016)\n"
+        "    (color 0 0 0 0)\n"
+        f'    (uuid "{_u()}")\n'
+        "  )\n"
+    )
+
+
 def _label_s(name, x, y):
-    return (f'  (label "{name}" (at {_fmt(x)} {_fmt(y)} 0) '
-            f'(effects (font (size 1.27 1.27)) (justify left bottom)) (uuid "{_u()}"))\n')
+    """一条网络只放一个标签，放在主干左端上方，避免文字堆叠"""
+    return (
+        f'  (label "{_esc(name)}"\n'
+        f"    (at {_fmt(x)} {_fmt(y)} 0)\n"
+        "    (effects (font (size 1.27 1.27)) (justify left bottom))\n"
+        f'    (uuid "{_u()}")\n'
+        "  )\n"
+    )
 
 
 def _module_rect_s(x1, y1, x2, y2, name, lx, ly):
-    """模块虚线边框 + 模块名"""
+    """模块虚线框 + 框内标题"""
     s = (f'  (rectangle (start {_fmt(x1)} {_fmt(y1)}) (end {_fmt(x2)} {_fmt(y2)}) '
          f'(stroke (width 0.127) (type dash)) (fill (type none)) (uuid "{_u()}"))\n')
-    # 注意括号层级：(text ... (effects ...) (uuid "..."))，uuid 必须在 text 内部。
-    # 旧版这里多写了一个 ')' 提前闭合 text，导致每个模块净少 1 个左括号，
-    # 整个 .kicad_sch 括号不平衡，KiCad 直接拒绝加载。
-    s += (f'  (text "{name}" (at {_fmt(lx)} {_fmt(ly)} 0) '
+    # 括号层级：(text ... (effects ...) (uuid "..."))，uuid 必须留在 text 内部
+    s += (f'  (text "{_esc(name)}" (at {_fmt(lx)} {_fmt(ly)} 0) '
           f'(effects (font (size 1.27 1.27))) '
           f'(uuid "{_u()}"))\n')
     return s
 
 
 # ---------------------------------------------------------------------------
-# 布局
+# 布局（委托统一引擎，保留旧签名给外部调用）
 # ---------------------------------------------------------------------------
-def layout_components(design):
-    """委托给统一布局引擎，保持原有返回签名 (positions, group_order, ref_to_group)。
+SCH_LAYOUT = dict(max_cols=4, title_h=6, group_gap=22, lane_gap=5.08)
 
-    v2.0.3：改用规整 slot 网格，模块之间与元件之间都有稳定间距，
-    避免元件/标签挤在一起。原理图用更紧凑的页面参数以落在 A4 内。
-    """
+
+def layout_components(design):
     from .layout import compute_layout
-    lay = compute_layout(design, max_cols=5, title_h=8, group_gap=10)
+    lay = compute_layout(design, **SCH_LAYOUT)
     return lay["positions"], lay["group_order"], lay["ref_to_group"]
+
+
+def _pick_paper(width, height):
+    """按内容范围选纸张；原理图不需要 SVG 的标题栏/页脚，按实际内容估算。"""
+    if width <= 287 and height <= 200:
+        return "A4"
+    if width <= 410 and height <= 300:
+        return "A3"
+    return "A2"
 
 
 # ---------------------------------------------------------------------------
 # 主入口
 # ---------------------------------------------------------------------------
 def build_schematic(design):
-    """从 design JSON 生成 .kicad_sch 文本"""
-    title = design.get("title", "Untitled")
-    paper = design.get("paper", "A4")
+    from .layout import compute_layout
 
-    # 1. 收集用到的符号
+    title = _esc(design.get("title", "Untitled"))
+    lay = compute_layout(design, **SCH_LAYOUT)
+    positions = lay["positions"]
+    comps_by_ref = {c["ref"]: c for c in design.get("components", [])}
+
+    # 1. lib_symbols
     used_libs = {}
-    for c in design["components"]:
+    for c in design.get("components", []):
         lib_id = f'{c["lib"]}:{c["symbol"]}'
         sym = get_symbol(lib_id)
         if sym is None:
             raise ValueError(f"未知符号: {lib_id}")
         used_libs[lib_id] = sym
-
-    # 2. 布局
-    positions, group_order, ref_to_group = layout_components(design)
-
-    # 3. 生成 lib_symbols
     libs_s = "".join(_lib_symbol_s(lid, sym) for lid, sym in used_libs.items())
 
-    # 4. 生成 symbol 实例
+    # 2. 元件实例
     insts_s = ""
-    for c in design["components"]:
+    for c in design.get("components", []):
+        if c["ref"] not in positions:
+            continue
         sym = get_symbol(f'{c["lib"]}:{c["symbol"]}')
         cx, cy = positions[c["ref"]]
         insts_s += _symbol_instance_s(c, cx, cy, sym)
 
-    # 5. 生成网络标签
-    labels_s = ""
-    for net in design.get("nets", []):
-        name = net["name"]
-        for conn in net.get("connections", []):
-            ref = conn["ref"]
-            pin_no = str(conn["pin"])
-            c = next((x for x in design["components"] if x["ref"] == ref), None)
-            if c is None:
-                continue
-            sym = get_symbol(f'{c["lib"]}:{c["symbol"]}')
-            pin = next((p for p in sym["pins"] if p[0] == pin_no), None)
-            if pin is None:
-                continue
-            cx, cy = positions[ref]
-            wx, wy = pin_world(cx, cy, 0, pin[3], pin[4])
-            labels_s += _label_s(name, wx, wy)
+    # 3. 真实导线 + junction + 每网络一个标签
+    wires_s, junctions_s, labels_s = "", "", ""
+    for name, pts in lay["net_points"].items():
+        if not pts:
+            continue
+        lane_y = lay["lanes"][name]
+        for p in pts:
+            wires_s += _wire_s(p["x"], p["y"], p["stub_x"], p["y"])      # 引脚 stub
+            wires_s += _wire_s(p["stub_x"], p["y"], p["stub_x"], lane_y)  # 垂直支线
 
-    # 6. 模块边框（虚线框 + 名称）
-    module_s = _draw_modules(design, positions, group_order, ref_to_group)
+        xs = sorted(set(p["stub_x"] for p in pts))
+        left, right = xs[0], xs[-1]
+        if len(xs) >= 2 and right - left > 0.4:
+            wires_s += _wire_s(left, lane_y, right, lane_y)               # 水平主干
+            # 每个支线接入主干的位置都加 junction，保证 T 型连接被 KiCad 认可
+            for x in xs:
+                junctions_s += _junction_s(x, lane_y)
+            label_x = left
+        else:
+            # 单引脚网络：竖线底端就是网络端点，label 直接贴在该点。
+            # 不额外画一段主干，否则会产生悬空 wire 端点
+            # （ERC: label_dangling / unconnected_wire_endpoint）。
+            label_x = left
+        # label 必须落在 wire 端点上才会被 KiCad 认作网络名
+        labels_s += _label_s(name, label_x, lane_y)
 
-    # 组装
+    # 4. 未接入任何网络的引脚打 no_connect 标记：
+    #    既让 ERC 不再刷屏 pin_not_connected，图上也能明确看出哪些脚是悬空的
+    connected_pins = set()
+    for net in design.get("nets", []) or []:
+        for conn in net.get("connections", []) or []:
+            connected_pins.add((conn.get("ref"), str(conn.get("pin", ""))))
+    nc_s = ""
+    for c in design.get("components", []):
+        sym = get_symbol(f'{c["lib"]}:{c["symbol"]}')
+        if sym is None or c["ref"] not in positions:
+            continue
+        cx, cy = positions[c["ref"]]
+        for p in sym["pins"]:
+            if (c["ref"], str(p[0])) in connected_pins:
+                continue
+            wx, wy = pin_world(cx, cy, 0, p[3], p[4])
+            nc_s += f'  (no_connect (at {_fmt(wx)} {_fmt(wy)}) (uuid "{_u()}"))\n'
+
+    # 5. 模块框（用引擎算好的不重叠矩形）
+    module_s = ""
+    for gname in lay["group_order"]:
+        box = lay["group_boxes"].get(gname)
+        if not box:
+            continue
+        x1, y1, x2, y2 = box
+        module_s += _module_rect_s(x1, y1, x2, y2, gname, snap(x1 + 2.54), snap(y1 + 4.2))
+
+    # 减去 SVG 专用的页脚/页边距，按原理图实际内容高度选纸
+    paper = _pick_paper(lay["bounds"][2] - 14.0, lay["lane_bottom"] + 12.0)
+
     sch = f"""(kicad_sch
   (version {KICAD_SCH_VERSION})
   (generator "eda-agent")
-  (generator_version "1.0")
+  (generator_version "2.0.4")
   (uuid "{_u()}")
   (paper "{paper}")
+  (title_block
+    (title "{title}")
+    (rev "1.0")
+  )
   (lib_symbols
 {libs_s}  )
 
 {insts_s}
+{wires_s}
+{junctions_s}
 {labels_s}
+{nc_s}
 {module_s}
   (sheet_instances
     (path "/" (page "1"))
@@ -238,21 +327,14 @@ def build_schematic(design):
 
 
 def _draw_modules(design, positions, group_order, ref_to_group):
-    """绘制模块虚线边框"""
+    """兼容旧调用：改用统一布局的模块框"""
+    from .layout import compute_layout
+    lay = compute_layout(design, **SCH_LAYOUT)
     out = ""
-    comp_by_ref = {c["ref"]: c for c in design["components"]}
-    for gname in group_order:
-        members = [r for r in comp_by_ref if ref_to_group.get(r) == gname]
-        if not members:
+    for gname in lay["group_order"]:
+        box = lay["group_boxes"].get(gname)
+        if not box:
             continue
-        # 计算边界
-        minx = min(positions[r][0] for r in members)
-        maxx = max(positions[r][0] for r in members)
-        miny = min(positions[r][1] for r in members)
-        maxy = max(positions[r][1] for r in members)
-        # 留出 ref/value 文字空间，避免模块名与元件标签贴在一起
-        pad = 9.0
-        x1, y1 = snap(minx - pad), snap(miny - pad)
-        x2, y2 = snap(maxx + pad), snap(maxy + pad)
-        out += _module_rect_s(x1, y1, x2, y2, gname, x1 + 2.54, y1 - 2.54)
+        x1, y1, x2, y2 = box
+        out += _module_rect_s(x1, y1, x2, y2, gname, snap(x1 + 2.54), snap(y1 + 4.2))
     return out

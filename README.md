@@ -18,6 +18,10 @@
 > **v2.0.3 绘图重做**：统一布局引擎 + SVG 重绘 —— 规整 slot 网格、模块框不重叠、
 > 正交走线（stub → 垂直支线 → 水平主干）、单引脚网络也完整出线、彩色网络名标签、
 > 标题栏/点阵网格/元件卡片，下载地址见 [绘图效果预览](docs/circuit-preview.html)。
+>
+> **v2.0.4 KiCad 原理图重做**：从「零导线 + 每引脚一个标签」改为**真实 wire + junction 连接**；
+> 每条网络只保留 1 个标签（13→3），Reference/Value 移到符号外侧，竖线统一走列间空隙不穿元件，
+> 未连接引脚自动打 no_connect，纸张按内容自适应 A4/A3。KiCad 10 ERC 复验通过。
 > [桌面版下载与使用说明 →](docs/DESKTOP-INSTALL.md)
 
 ## ✨ 功能特性
@@ -78,7 +82,7 @@
 
 ### 方式一：桌面应用（推荐，无需 Python）
 
-去仓库 **Releases** 下载 `EDA-Agent-Setup-v2.0.3.exe` 双击安装，或下载 `EDA-Agent.exe` 免安装直接双击。
+去仓库 **Releases** 下载 `EDA-Agent-Setup-v2.0.4.exe` 双击安装，或下载 `EDA-Agent.exe` 免安装直接双击。
 安装后有开始菜单 / 桌面快捷方式，卸载走控制面板。完整说明见 [桌面版安装指南](docs/DESKTOP-INSTALL.md)。
 
 自己构建：
@@ -86,7 +90,7 @@
 ```powershell
 pip install -r requirements-desktop.txt
 powershell -ExecutionPolicy Bypass -File scripts\build_desktop.ps1
-# 产物：dist\EDA-Agent.exe 与 dist\installer\EDA-Agent-Setup-v2.0.3.exe
+# 产物：dist\EDA-Agent.exe 与 dist\installer\EDA-Agent-Setup-v2.0.4.exe
 ```
 
 推一个 `v*` 标签即可让 GitHub Actions 自动构建安装包并发布 Release。

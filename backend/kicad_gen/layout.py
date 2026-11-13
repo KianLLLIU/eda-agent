@@ -144,13 +144,19 @@ def compute_layout(design, max_cols=MAX_COLS, title_h=TITLE_H,
     y_cursor = title_h + group_gap
     max_right = x_origin
 
+    # 所有模块共用同一个 slot 宽度：列网格全局对齐，
+    # 这样列间空隙在每一行都是同一条竖直通道，走线不会穿过任何元件卡片。
+    all_cell_w = [cells[r][0] for refs in members.values() for r in refs]
+    global_slot_w = (max(all_cell_w) + SLOT_GAP_X) if all_cell_w else 20.0
+    slot_half = (global_slot_w - SLOT_GAP_X) / 2.0   # 卡片半宽（按最宽元件）
+
     for gname in group_order:
         refs = members.get(gname, [])
         if not refs:
             continue
         cols = min(len(refs), max(max_cols, 1))
         rows = math.ceil(len(refs) / cols)
-        slot_w = max(cells[r][0] for r in refs) + SLOT_GAP_X
+        slot_w = global_slot_w
 
         row_heights = []
         for i in range(rows):
@@ -199,13 +205,30 @@ def compute_layout(design, max_cols=MAX_COLS, title_h=TITLE_H,
                 continue
             cx, cy = positions[ref]
             wx, wy = pin_world(cx, cy, 0, pin[3], pin[4])
-            # 引脚在元件左侧还是右侧：决定 stub 往哪边引，避免竖线穿过元件卡片
+            # 引脚在元件左侧还是右侧，决定 stub 往哪边引。
+            # stub 终点固定在「卡片外沿 + 2mm」的列间空隙：同一列所有元件共用
+            # 该竖直通道，导线不会穿过自己或下方元件的图形。
             side = 1 if wx >= cx else -1
+            stub = max(slot_half + 2.0 - abs(wx - cx), STUB)
             pts.append({
                 "x": wx, "y": wy, "ref": ref, "pin": pin_no,
-                "side": side, "stub_x": snap(wx + side * STUB),
+                "side": side, "stub_x": snap(wx + side * stub),
             })
         net_points[name] = pts
+
+    # 不同网络的垂直支线绝不能共用同一个 x：两条竖线重合会把不同网络短接，
+    # KiCad ERC 会报 multiple_net_names。这里做全局唯一化（同网络内允许相同）。
+    used_stub_x = []          # [(x, net_name)]
+    for name, pts in net_points.items():
+        for p in pts:
+            x = p["stub_x"]
+            for _ in range(48):
+                if not any(abs(x - ux) < 0.01 and owner != name
+                           for ux, owner in used_stub_x):
+                    break
+                x = snap(x + p["side"] * GRID)
+            p["stub_x"] = x
+            used_stub_x.append((x, name))
 
     # ---- 水平通道：x 区间不重叠的网络共用一条 lane（贪心区间着色）----
     # 这样网络多时不会把图拉得过高，垂直支线之间的交叉也更少。
