@@ -232,7 +232,7 @@ def _selfcheck_markdown(sc: dict) -> str:
     if fixes:
         lines += ["", "## 自动修正", ""]
         lines += ["- " + f for f in fixes]
-    lines += ["", "---", "", "> 通模拟为基于网表的静态电气推理，不是 SPICE 瞬态仿真；",
+    lines += ["", "---", "", "> 通电模拟为基于网表的静态电气推理，不是 SPICE 瞬态仿真；",
               "> 实际焊接上电前请用万用表确认电源电压与极性。"]
     return "\n".join(lines) + "\n"
 
