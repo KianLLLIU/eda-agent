@@ -135,56 +135,28 @@ def compute_layout(design, max_cols=MAX_COLS, title_h=TITLE_H,
     comp_by_ref, group_order, ref_to_group, members = _groups_of(design)
     cells = _cell_sizes(comps)
 
-    # 模块框 = 本模块底部 padding + 下一模块顶部 padding，
-    # 间距必须大于两者之和，否则相邻虚线框在视觉上会叠在一起。
+    # v2.2.0：改用智能布局引擎 —— 变宽列 + 网表亲和度排序。
+    # 旧版用全局统一列宽（取最宽元件），窄元件被撑出巨缝；新版每列只按
+    # 本列最宽元件定宽，且强连通元件排在相邻位置。
     group_gap = max(float(group_gap), GROUP_PAD_BOTTOM + GROUP_PAD_TOP + 2.0)
 
-    positions = {}
-    group_boxes = {}
-    y_cursor = title_h + group_gap
-    max_right = x_origin
+    from .placement import layout_schematic
 
-    # 所有模块共用同一个 slot 宽度：列网格全局对齐，
-    # 这样列间空隙在每一行都是同一条竖直通道，走线不会穿过任何元件卡片。
-    all_cell_w = [cells[r][0] for refs in members.values() for r in refs]
-    global_slot_w = (max(all_cell_w) + SLOT_GAP_X) if all_cell_w else 20.0
-    slot_half = (global_slot_w - SLOT_GAP_X) / 2.0   # 卡片半宽（按最宽元件）
-
-    for gname in group_order:
-        refs = members.get(gname, [])
-        if not refs:
-            continue
-        cols = min(len(refs), max(max_cols, 1))
-        rows = math.ceil(len(refs) / cols)
-        slot_w = global_slot_w
-
-        row_heights = []
-        for i in range(rows):
-            chunk = refs[i * cols:(i + 1) * cols]
-            row_heights.append(max(cells[r][1] for r in chunk) if chunk else 0.0)
-
-        gy0 = y_cursor
-        cy_cursor = y_cursor
-        for i in range(rows):
-            chunk = refs[i * cols:(i + 1) * cols]
-            for j, r in enumerate(chunk):
-                cx = x_origin + j * slot_w + slot_w / 2
-                cy = cy_cursor + row_heights[i] / 2
-                positions[r] = (snap(cx), snap(cy))
-            cy_cursor += row_heights[i] + ROW_GAP
-
-        total_h = cy_cursor - ROW_GAP - gy0
-        box_w = cols * slot_w - SLOT_GAP_X
-        group_boxes[gname] = (
-            x_origin - GROUP_PAD_X,
-            gy0 - GROUP_PAD_TOP,
-            x_origin + box_w + GROUP_PAD_X,
-            gy0 + total_h + GROUP_PAD_BOTTOM,
-        )
-        max_right = max(max_right, x_origin + box_w + GROUP_PAD_X)
-        y_cursor = gy0 + total_h + group_gap
-
-    content_bottom = max([b[3] for b in group_boxes.values()], default=y_cursor)
+    positions, group_order, members, group_boxes, _smart_bounds = layout_schematic(
+        design, cells,
+        max_cols=max_cols,
+        x_origin=x_origin,
+        y_origin=title_h + 8.0,
+        row_gap=ROW_GAP,
+        group_pad_x=GROUP_PAD_X,
+        group_pad_top=GROUP_PAD_TOP,
+        group_pad_bottom=GROUP_PAD_BOTTOM,
+        group_gap=group_gap,
+        slot_gap=SLOT_GAP_X,
+    )
+    ref_to_group = {r: g for g, refs in members.items() for r in refs}
+    content_bottom = max([b[3] for b in group_boxes.values()], default=0.0)
+    max_right = max([b[2] for b in group_boxes.values()], default=x_origin)
 
     # ---- 网络：收集每个连接的引脚世界坐标与出线方向 ----
     net_points = {}
@@ -209,7 +181,8 @@ def compute_layout(design, max_cols=MAX_COLS, title_h=TITLE_H,
             # stub 终点固定在「卡片外沿 + 2mm」的列间空隙：同一列所有元件共用
             # 该竖直通道，导线不会穿过自己或下方元件的图形。
             side = 1 if wx >= cx else -1
-            stub = max(slot_half + 2.0 - abs(wx - cx), STUB)
+            cell_w = cells[ref][0]
+            stub = max(cell_w / 2.0 + 2.0 - abs(wx - cx), STUB)
             pts.append({
                 "x": wx, "y": wy, "ref": ref, "pin": pin_no,
                 "side": side, "stub_x": snap(wx + side * stub),

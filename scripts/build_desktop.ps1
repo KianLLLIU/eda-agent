@@ -9,7 +9,7 @@
 #
 #  Outputs:
 #     dist\EDA-Agent.exe                         portable, double-click to run
-#     dist\installer\EDA-Agent-Setup-v2.1.0.exe  real installer (if ISCC found)
+#     dist\installer\EDA-Agent-Setup-v2.3.0.exe  real installer (if ISCC found)
 # ===========================================================================
 
 param(

@@ -6,7 +6,7 @@
 ;  or from project root:
 ;    powershell -ExecutionPolicy Bypass -File scripts\build_desktop.ps1
 ;
-;  Output: dist\installer\EDA-Agent-Setup-v2.1.0.exe
+;  Output: dist\installer\EDA-Agent-Setup-v2.3.0.exe
 ;  Installs: Start Menu entry, optional desktop shortcut, uninstaller.
 ;
 ;  NOTE: This file is intentionally pure ASCII. Inno Setup reads .iss files
@@ -17,7 +17,7 @@
 ; ===========================================================================
 
 #define MyAppName "EDA Agent"
-#define MyAppVersion "2.1.0"
+#define MyAppVersion "2.3.0"
 #define MyAppPublisher "KianLLLIU"
 #define MyAppURL "https://github.com/KianLLLIU/eda-agent"
 #define MyAppExeName "EDA-Agent.exe"
@@ -65,6 +65,11 @@ Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription:
 Source: "..\dist\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 ; Icon kept separately for shortcuts and the uninstaller entry
 Source: "..\assets\eda-agent.ico"; DestDir: "{app}"; Flags: ignoreversion
+; v2.3: Freerouting autorouter + bundled Java 25 (native CLI has a GraalVM bug,
+; so we ship the jar and run it with Java). Kept outside the one-file exe to
+; avoid unpacking ~200MB on every launch.
+Source: "..\tools\freerouting\freerouting-2.5.0.jar"; DestDir: "{app}\tools\freerouting"; Flags: ignoreversion
+Source: "..\tools\java25\jdk-25.0.5+8-jre\*"; DestDir: "{app}\tools\java25\jdk-25.0.5+8-jre"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; Offline documentation
 Source: "..\docs\DESKTOP-INSTALL.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion

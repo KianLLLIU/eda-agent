@@ -21,6 +21,11 @@ icon = icon_path if os.path.isfile(icon_path) else None
 datas = [
     (os.path.join(root, "frontend"), "frontend"),
     (os.path.join(root, "backend", "templates"), "backend/templates"),
+    # v2.3：IPC 桥接脚本 + kipy 库（Python 文件，小）；
+    # Java25 + Freerouting jar 体积大，由安装包单独部署到 tools/ 目录，
+    # 不在 onefile exe 内，避免每次启动解压 200MB。
+    (os.path.join(root, "scripts", "kicad_ipc_bridge.py"), "scripts"),
+    (os.path.join(root, "tools", "pylibs", "kipy"), "tools/pylibs/kipy"),
 ]
 
 hiddenimports = [

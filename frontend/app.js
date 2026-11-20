@@ -302,6 +302,24 @@
     var nets = (data.design && data.design.nets) || [];
     var diffText = { beginner: '入门', intermediate: '进阶', advanced: '挑战' }[state.difficulty] || '进阶';
     $('#resultMeta').textContent = modeText + ' · ' + comps.length + ' 元件 · ' + nets.length + ' 网络 · ' + diffText + ' · ' + data.project_name;
+    // v2.3：显示 Freerouting 自动布线状态
+    var badge = $('#routeBadge');
+    if (badge) {
+      var rt = data.routing;
+      if (rt && rt.ok) {
+        var rs = rt.stats || {};
+        badge.textContent = '✓ Freerouting 已自动布线 · ' + (rs.segments || 0) + ' 段走线'
+          + (rs.vias ? ' · ' + rs.vias + ' 过孔' : '');
+        badge.className = 'route-badge ok';
+        badge.hidden = false;
+      } else if (rt && !rt.skipped) {
+        badge.textContent = '○ 已摆件，布线未完成（可设 EDA_AI_AUTOROUTE 或手动布）';
+        badge.className = 'route-badge warn';
+        badge.hidden = false;
+      } else {
+        badge.hidden = true;
+      }
+    }
 
     ['bom', 'netlist', 'report', 'guide', 'hardware'].forEach(function (k) {
       var el = $('#panel-' + k);
@@ -876,6 +894,12 @@
     };
     $('#paramToggle').onclick = function () {
       var b = $('#paramBody'); b.hidden = !b.hidden;
+      this.textContent = b.hidden ? '展开' : '收起';
+    };
+    // v2.3：板子库降级为备用，默认收起
+    var tplToggle = $('#tplToggle');
+    if (tplToggle) tplToggle.onclick = function () {
+      var b = $('#tplBody'); b.hidden = !b.hidden;
       this.textContent = b.hidden ? '展开' : '收起';
     };
 

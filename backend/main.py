@@ -203,6 +203,28 @@ def assemble_result(design: dict, requirement: str, mode: str,
     out_dir = os.path.join(config.OUTPUT_DIR, session, project_name)
     files = build_project_files(design, out_dir, project_name)
 
+    # v2.3：agent 只摆件，连线交给 Freerouting 自动布线。
+    # 布线失败（未安装 / 超时 / 无走线）时保留带飞线的原始 PCB，绝不让生成失败。
+    routing = {"ok": False, "skipped": True, "stats": {}, "error": ""}
+    auto_route = os.environ.get("EDA_AI_AUTOROUTE", "1") != "0"
+    if auto_route:
+        try:
+            from . import freerouting
+            pcb_text = _read(files["pcb"])
+            result = freerouting.route_board(design, pcb_text, out_dir,
+                                             timeout=int(os.environ.get("EDA_AI_ROUTE_TIMEOUT", "90")))
+            if result["ok"]:
+                with open(files["pcb"], "w", encoding="utf-8") as f:
+                    f.write(result["pcb_text"])
+                routing = {"ok": True, "skipped": False,
+                           "stats": result["stats"], "error": ""}
+            else:
+                routing = {"ok": False, "skipped": False,
+                           "stats": result["stats"], "error": result["error"]}
+        except Exception as e:  # noqa: BLE001
+            routing = {"ok": False, "skipped": False, "stats": {},
+                       "error": "自动布线异常: %s" % e}
+
     report_md = work_report(design, requirement, mode)
     guide_md = operation_guide(design, project_name)
     hw_md = hardware_requirements(design)
@@ -211,7 +233,7 @@ def assemble_result(design: dict, requirement: str, mode: str,
         with open(os.path.join(out_dir, fname), "w", encoding="utf-8") as f:
             f.write(content)
 
-    zip_path = package_project(out_dir, project_name)
+    zip_path = package_project(out_dir, project_name)  # 布线后再打包
 
     return {
         "design": design,
@@ -228,6 +250,7 @@ def assemble_result(design: dict, requirement: str, mode: str,
         "download_zip": zip_path,
         "files": {k: os.path.basename(v) for k, v in files.items()},
         "output_dir": out_dir,
+        "routing": routing,
     }
 
 
@@ -351,6 +374,39 @@ def open_kicad(req: OpenKicadRequest):
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=f"启动 KiCad 失败: {e}") from e
     return {"ok": True, "kicad": kicad, "project": pro_files[0]}
+
+
+# ---------------------------------------------------------------------------
+# v2.3：KiCad 实时联动（IPC）
+# ---------------------------------------------------------------------------
+@app.get("/api/kicad/ipc")
+def kicad_ipc_status():
+    """查询 KiCad IPC server 状态（实时绘图前置条件）。"""
+    from . import kicad_live
+    return kicad_live.ipc_status()
+
+
+@app.post("/api/kicad/ipc/enable")
+def kicad_ipc_enable():
+    """开启 KiCad IPC API Server（需重启 KiCad 生效）。"""
+    from . import kicad_live
+    return kicad_live.enable_ipc()
+
+
+class IpcPushRequest(BaseModel):
+    design: dict
+    pcb_path: str = Field("", description="已生成 PCB 的绝对路径（可选）")
+
+
+@app.post("/api/kicad/ipc/push")
+def kicad_ipc_push(req: IpcPushRequest):
+    """把元件位置实时推送到已打开的 KiCad PCB（IPC）。"""
+    from . import kicad_live
+    result = kicad_live.push_preview(req.design, req.pcb_path)
+    if not result.get("ok"):
+        # IPC 不可用不算错误，返回 200 + 说明，前端可提示
+        return {"ok": False, **result}
+    return {"ok": True, **result}
 
 
 # ---------------------------------------------------------------------------

@@ -65,14 +65,17 @@
         <div class="quick-list" id="quickList"></div>
       </section>
 
-      <!-- 模板库 -->
+      <!-- 板子库（v2.3 降级为备用：主路径是对话实时生成） -->
       <section class="card config-card">
         <div class="card-head">
-          <h2 class="card-title">板子库 <span class="tpl-count" id="templateCount"></span></h2>
-          <span class="card-hint">点击直接套用</span>
+          <h2 class="card-title">板子库（备用） <span class="tpl-count" id="templateCount"></span></h2>
+          <button class="text-btn" id="tplToggle">展开</button>
         </div>
-        <div class="tpl-tabs" id="templateTabs"></div>
-        <div class="template-list" id="templateList"></div>
+        <p class="tpl-note">默认由 AI 对话实时生成电路。无网络时可展开这里套用现成板子。</p>
+        <div id="tplBody" hidden>
+          <div class="tpl-tabs" id="templateTabs"></div>
+          <div class="template-list" id="templateList"></div>
+        </div>
       </section>
 
       <!-- 生成参数 -->
@@ -202,6 +205,7 @@
           <div class="result-info">
             <h3 class="result-title" id="resultTitle">设计结果</h3>
             <p class="result-meta" id="resultMeta"></p>
+            <p class="route-badge" id="routeBadge" hidden></p>
           </div>
           <div class="result-actions">
             <a class="btn-download" id="btnDownload" href="#" download>
@@ -299,7 +303,7 @@
         <label class="field-label">接口地址 (Base URL)</label>
         <input class="field-input" id="setBaseUrl" placeholder="https://api.deepseek.com/v1" autocomplete="off" />
         <label class="field-label">模型名称</label>
-        <input class="field-input" id="setModel" placeholder="deepseek-chat" autocomplete="off" />
+        <input class="field-input" id="setModel" placeholder="hy4-flash" autocomplete="off" />
         <label class="field-label">请求超时（秒）</label>
         <input class="field-input" id="setTimeout" type="number" min="5" max="300" value="60" />
         <label class="checkbox-row"><input type="checkbox" id="setNoFree" /> <span>关闭免费在线 LLM（纯离线模板）</span></label>

@@ -43,5 +43,12 @@ _*.txt
 _build.py
 _exe_test.py
 
+# v2.3 自动布线 / IPC 工具（体积大或依赖多，CI 现装，不入库）
+tools/freerouting/*.jar
+tools/freerouting/*.exe
+tools/freerouting/*.zip
+tools/java25/
+tools/pylibs/
+
 # 下划线开头的临时脚本
 _*.py

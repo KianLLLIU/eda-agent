@@ -38,6 +38,32 @@ jobs:
       - name: Generate application icon
         run: python scripts/make_icon.py
 
+      # v2.3: 自动布线工具（Freerouting jar + Java 25）体积大，不入库，CI 现下。
+      # 用 ghproxy 镜像规避 GitHub Releases 直连限速；失败则退回直连。
+      - name: Download autorouting tools
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path tools/freerouting, tools/java25 | Out-Null
+          function Get-WithMirror($url, $dst) {
+            $mirrors = @(
+              "https://ghfast.top/$url",
+              "https://ghproxy.net/$url",
+              $url
+            )
+            foreach ($m in $mirrors) {
+              try {
+                Invoke-WebRequest -Uri $m -OutFile $dst -TimeoutSec 300
+                if ((Get-Item $dst).Length -gt 1MB) { return }
+              } catch { Write-Host "mirror failed: $m" }
+            }
+            throw "download failed: $url"
+          }
+          Get-WithMirror "https://github.com/freerouting/freerouting/releases/download/v2.5.0/freerouting-2.5.0.jar" "tools/freerouting/freerouting-2.5.0.jar"
+          Get-WithMirror "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.5%2B8/OpenJDK25U-jre_x64_windows_hotspot_25.0.5_8.zip" "tools/java25/jre25.zip"
+          Expand-Archive -Path tools/java25/jre25.zip -DestinationPath tools/java25 -Force
+          python -m pip install --target tools/pylibs/kipy kicad-python --no-deps -q
+          python -m pip install --target tools/pylibs/kipy "protobuf<6,>=5.29" "pynng<0.10,>=0.9" jsonschema -q
+
       - name: Build portable executable
         run: python -m PyInstaller --clean -y packaging/eda_agent_desktop.spec
 

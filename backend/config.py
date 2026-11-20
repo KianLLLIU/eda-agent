@@ -31,8 +31,13 @@ OUTPUT_DIR = os.environ.get("EDA_AGENT_OUTPUT", DEFAULT_OUTPUT)
 USER_DATA_DIR = os.environ.get("EDA_AGENT_DATA", os.path.join(os.path.expanduser("~"), ".eda-agent"))
 
 APP_NAME = "EDA Agent"
-APP_VERSION = "2.1.0"
+APP_VERSION = "2.3.0"
 IS_FROZEN = _is_frozen()
+
+# 应用安装目录（exe 所在目录）。打包后外部工具（Java/Freerouting）装在这里，
+# 而 __file__ 在 _MEIPASS 临时目录，所以工具查找要用这个而不是 __file__。
+APP_DIR = (os.path.dirname(sys.executable) if _is_frozen()
+           else os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # ---------------------------------------------------------------------------
 # 运行时设置（前端「设置」面板写入，仅当前进程有效，不写入环境变量）
@@ -110,12 +115,19 @@ _load_settings()
 
 # ---------------------------------------------------------------------------
 # LLM 配置（OpenAI 兼容接口）
-# 支持 OpenAI / DeepSeek / 通义千问 / Ollama 等任意 OpenAI 兼容服务
+# v2.3 起默认走腾讯云 TokenHub 的 Hy4 flash —— 对话式实时分析需求、生成设计。
+# 仍支持任何 OpenAI 兼容服务（DeepSeek / 通义 / Ollama ...）：
+# 环境变量 EDA_AGENT_BASE_URL / EDA_AGENT_MODEL / EDA_AGENT_API_KEY 覆盖默认值，
+# 前端「设置」面板也能在运行时切换，Key 只存内存不落盘。
 # ---------------------------------------------------------------------------
-LLM_API_KEY = os.environ.get("EDA_AGENT_API_KEY", "") or os.environ.get("OPENAI_API_KEY", "")
-LLM_BASE_URL = os.environ.get("EDA_AGENT_BASE_URL", "") or os.environ.get("OPENAI_BASE_URL", "https://api.deepseek.com/v1")
-LLM_MODEL = os.environ.get("EDA_AGENT_MODEL", "") or os.environ.get("OPENAI_MODEL", "deepseek-chat")
-LLM_TIMEOUT = float(os.environ.get("EDA_AGENT_TIMEOUT", "60"))
+LLM_API_KEY = (os.environ.get("EDA_AGENT_API_KEY", "")
+               or os.environ.get("TOKENHUB_API_KEY", "")
+               or os.environ.get("OPENAI_API_KEY", ""))
+LLM_BASE_URL = (os.environ.get("EDA_AGENT_BASE_URL", "")
+                or os.environ.get("OPENAI_BASE_URL", "https://api.hunyuan.cloud.tencent.com/v1"))
+LLM_MODEL = (os.environ.get("EDA_AGENT_MODEL", "")
+             or os.environ.get("OPENAI_MODEL", "hy4-flash"))
+LLM_TIMEOUT = float(os.environ.get("EDA_AGENT_TIMEOUT", "90"))
 
 # ---------------------------------------------------------------------------
 # 免费在线 LLM（无需 API key）

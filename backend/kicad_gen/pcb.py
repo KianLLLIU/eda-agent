@@ -371,6 +371,32 @@ def build_pcb(design, board_w=None, board_h=None):
     inset = _HOLE_MARGIN if need_holes else _MARGIN
 
     positions, content_w, content_h = _place(design, items, inset)
+    by_ref = {it["ref"]: it for it in items}
+
+    # v2.2.0：模拟退火优化布局（HPWL + 重叠 + 组连续性）。
+    # 环境变量 EDA_AI_PLACEMENT=0 可关闭，便于 A/B 对比与回归。
+    import os as _os
+    placement_stats = None
+    if len(items) >= 3 and _os.environ.get("EDA_AI_PLACEMENT", "1") != "0":
+        from .placement import layout_pcb
+
+        seed = abs(hash(design.get("title", "") + "|".join(i["ref"] for i in items))) % 100000
+        optimized, placement_stats = layout_pcb(
+            design, items, seed=seed, iterations=1800,
+            target_w=content_w, target_h=content_h,
+        )
+        if len(optimized) == len(items):
+            # 把退火结果平移回原来的内容区域（inset 左上角）
+            x0 = min(optimized[r][0] - by_ref[r]["w"] / 2 for r in optimized)
+            y0 = min(optimized[r][1] - by_ref[r]["h"] / 2 for r in optimized)
+            dx, dy = inset - x0, inset - y0
+            positions = {r: (_snap(optimized[r][0] + dx, 0.05),
+                             _snap(optimized[r][1] + dy, 0.05)) for r in optimized}
+            content_w = max(optimized[r][0] + dx + by_ref[r]["w"] / 2
+                            for r in optimized) - inset
+            content_h = max(optimized[r][1] + dy + by_ref[r]["h"] / 2
+                            for r in optimized) - inset
+
     bw = _snap(content_w + 2 * inset, 0.5)
     bh = _snap(content_h + 2 * inset, 0.5)
     bw = max(bw, 38.0)
@@ -392,6 +418,7 @@ def build_pcb(design, board_w=None, board_h=None):
 
     # ---- 封装实例
     fp_nodes = []
+    fp_instances = []  # v2.2.0 给 A* 布线器用：(ref, fp_x, fp_y, rot, node)
     for it in items:
         x, y = positions[it["ref"]]
         x += extra_x
@@ -404,9 +431,25 @@ def build_pcb(design, board_w=None, board_h=None):
             x, y = x - cy, y + cx
         else:
             x, y = x - cx, y - cy
-        fp_nodes.append(_instance(it["fp"], it["lib"], it["ref"],
-                                  it.get("comp", {}).get("value", ""),
-                                  off_x + x, off_y + y, it["rot"], netmap))
+        fp_x, fp_y = off_x + x, off_y + y
+        node = _instance(it["fp"], it["lib"], it["ref"],
+                         it.get("comp", {}).get("value", ""),
+                         fp_x, fp_y, it["rot"], netmap)
+        fp_nodes.append(node)
+        fp_instances.append((it["ref"], fp_x, fp_y, it["rot"], node))
+
+    # v2.3：agent 只负责摆放元件 + 生成飞线，连线交给 KiCad/Freerouting
+    # 在 GUI 内完成。自研 A* 布线器保留代码但默认关闭；需要时设
+    # EDA_AI_ROUTING=1 可重新启用（用于离线快速出带铜走线的板子）。
+    routing_stats = {}
+    seg_nodes, via_nodes = [], []
+    if _os.environ.get("EDA_AI_ROUTING", "0") == "1":
+        from .router import route_pcb
+
+        seg_nodes, via_nodes, routing_stats = route_pcb(
+            design, fp_instances,
+            (off_x, off_y, off_x + bw, off_y + bh), netmap,
+        )
 
     # ---- 安装孔
     if need_holes:
@@ -462,7 +505,7 @@ def build_pcb(design, board_w=None, board_h=None):
     ]
     for n in net_nodes:
         parts.append("  " + fplib.dump(n, 1).replace("\n  ", "\n    "))
-    for n in edges + texts + fp_nodes:
+    for n in edges + texts + fp_nodes + seg_nodes + via_nodes:
         parts.append(fplib.dump(n, 1))
     parts.append(")")
     return "\n".join(parts) + "\n"

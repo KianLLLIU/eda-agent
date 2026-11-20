@@ -254,31 +254,13 @@ def build_schematic(design):
         cx, cy = positions[c["ref"]]
         insts_s += _symbol_instance_s(c, cx, cy, sym)
 
-    # 3. 真实导线 + junction + 每网络一个标签
-    wires_s, junctions_s, labels_s = "", "", ""
-    for name, pts in lay["net_points"].items():
-        if not pts:
-            continue
-        lane_y = lay["lanes"][name]
-        for p in pts:
-            wires_s += _wire_s(p["x"], p["y"], p["stub_x"], p["y"])      # 引脚 stub
-            wires_s += _wire_s(p["stub_x"], p["y"], p["stub_x"], lane_y)  # 垂直支线
+    # 3. 真实导线 + junction + 每网络一个标签（v2.2.0 走 A* 避障）
+    from .router import route_schematic_nets
 
-        xs = sorted(set(p["stub_x"] for p in pts))
-        left, right = xs[0], xs[-1]
-        if len(xs) >= 2 and right - left > 0.4:
-            wires_s += _wire_s(left, lane_y, right, lane_y)               # 水平主干
-            # 每个支线接入主干的位置都加 junction，保证 T 型连接被 KiCad 认可
-            for x in xs:
-                junctions_s += _junction_s(x, lane_y)
-            label_x = left
-        else:
-            # 单引脚网络：竖线底端就是网络端点，label 直接贴在该点。
-            # 不额外画一段主干，否则会产生悬空 wire 端点
-            # （ERC: label_dangling / unconnected_wire_endpoint）。
-            label_x = left
-        # label 必须落在 wire 端点上才会被 KiCad 认作网络名
-        labels_s += _label_s(name, label_x, lane_y)
+    routed = route_schematic_nets(design, lay)
+    wires_s = "".join(_wire_s(x1, y1, x2, y2) for x1, y1, x2, y2 in routed["wires"])
+    junctions_s = "".join(_junction_s(x, y) for x, y in routed["junctions"])
+    labels_s = "".join(_label_s(name, x, y) for name, x, y in routed["labels"])
 
     # 4. 未接入任何网络的引脚打 no_connect 标记：
     #    既让 ERC 不再刷屏 pin_not_connected，图上也能明确看出哪些脚是悬空的
