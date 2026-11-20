@@ -320,8 +320,27 @@
         badge.hidden = true;
       }
     }
+    // v2.4：自检 / 通电模拟徽标
+    var cb = $('#checkBadge');
+    if (cb) {
+      var sc = data.selfcheck;
+      if (sc && sc.summary && sc.summary.indexOf('未执行') < 0) {
+        cb.textContent = (sc.ok ? '✓ ' : '⚠ ') + '自检 ' + (sc.score || 0)
+          + ' 分 · ' + (sc.error_count || 0) + ' 错误 / ' + (sc.warning_count || 0)
+          + ' 警告 · ' + (sc.power_on && sc.power_on.ok ? '通电模拟正常' : '通电模拟异常');
+        cb.className = 'check-badge ' + (sc.ok ? 'ok' : 'warn');
+        cb.hidden = false;
+        cb.onclick = function () {
+          $$('#tabs .tab').forEach(function (t) { t.classList.toggle('active', t.dataset.tab === 'selfcheck'); });
+          $$('.tab-panels .panel').forEach(function (p) { p.classList.remove('active'); });
+          var sp = $('#panel-selfcheck'); if (sp) sp.classList.add('active');
+        };
+      } else {
+        cb.hidden = true;
+      }
+    }
 
-    ['bom', 'netlist', 'report', 'guide', 'hardware'].forEach(function (k) {
+    ['bom', 'netlist', 'report', 'guide', 'hardware', 'selfcheck'].forEach(function (k) {
       var el = $('#panel-' + k);
       if (el) el.innerHTML = '<div class="md">' + renderMd(data[k + '_md']) + '</div>';
     });
@@ -501,6 +520,7 @@
     $('#' + id).hidden = false;
     if (id === 'historyDrawer') loadHistory();
     if (id === 'settingsDrawer') { loadSettings(); loadKicad(false); }
+    if (id === 'modelDrawer') loadModelConfig();
   }
   function closeDrawers() {
     $('#overlay').hidden = true;
@@ -595,6 +615,91 @@
       loadStatus();
       toast('设置已保存');
     } catch (e) { toast('保存失败：' + e.message, true); }
+  }
+
+  /* --------------------------------------------- v2.4 大模型 API 配置 */
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  async function loadModelConfig() {
+    try {
+      var s = await api('/api/settings');
+      if (!$('#mdlBaseUrl').value) $('#mdlBaseUrl').value = s.base_url || '';
+      if (!$('#mdlModel').value) $('#mdlModel').value = s.model || '';
+      $('#mdlTimeout').value = s.timeout || 90;
+      $('#mdlNoFree').checked = !!s.no_free_llm;
+      $('#mdlCurBase').textContent = s.base_url || '—';
+      $('#mdlCurModel').textContent = s.model || '—';
+      $('#mdlCurKey').textContent = s.api_key_set ? '已配置（仅内存）' : '未配置';
+      $('#mdlCurMode').textContent = s.llm_mode || (s.api_key_set ? '自定义 Key' : '免费在线');
+      // 高亮匹配的预设
+      $$('#modelPresets .preset-card').forEach(function (b) {
+        b.classList.toggle('active', b.dataset.base === s.base_url);
+      });
+    } catch (e) { toast('读取模型配置失败：' + e.message, true); }
+  }
+
+  function showModelResult(html, ok) {
+    var el = $('#modelResult');
+    el.innerHTML = html;
+    el.className = 'model-result ' + (ok ? 'ok' : 'err');
+    el.hidden = false;
+  }
+
+  function collectModelPayload(includeKey) {
+    var p = {
+      base_url: $('#mdlBaseUrl').value.trim(),
+      model: $('#mdlModel').value.trim(),
+      timeout: Number($('#mdlTimeout').value) || 90,
+      no_free_llm: $('#mdlNoFree').checked
+    };
+    if (includeKey) {
+      var key = $('#mdlApiKey').value.trim();
+      if (key) p.api_key = key;
+    }
+    return p;
+  }
+
+  async function testLlm() {
+    var payload = collectModelPayload(true);
+    if (!payload.base_url || !payload.model) {
+      showModelResult('请先填写接口地址和模型 ID', false); return;
+    }
+    showModelResult('正在连接…', true);
+    $('#btnTestLlm').disabled = true;
+    try {
+      var d = await api('/api/settings/test-llm', { method: 'POST', body: payload });
+      if (d.ok) {
+        showModelResult('✓ 连接成功 · ' + (d.latency_ms || 0) + 'ms · 模型回复：'
+          + escapeHtml(d.reply || '(空)'), true);
+      } else {
+        showModelResult('✗ 连接失败（HTTP ' + (d.status || '-') + '，'
+          + (d.latency_ms || 0) + 'ms）：' + escapeHtml(d.error || ''), false);
+      }
+    } catch (e) {
+      showModelResult('✗ 测试失败：' + escapeHtml(e.message), false);
+    } finally {
+      $('#btnTestLlm').disabled = false;
+    }
+  }
+
+  async function saveModelConfig() {
+    var payload = collectModelPayload(true);
+    if (!payload.base_url || !payload.model) {
+      showModelResult('请先填写接口地址和模型 ID', false); return;
+    }
+    try {
+      await api('/api/settings', { method: 'POST', body: payload });
+      $('#mdlApiKey').value = '';
+      showModelResult('✓ 已保存并立即生效，当前所有新对话都会使用该模型。', true);
+      loadSettings(); loadStatus(); loadModelConfig();
+      toast('大模型配置已更新');
+    } catch (e) {
+      showModelResult('✗ 保存失败：' + escapeHtml(e.message), false);
+    }
   }
 
   function applyTheme(t) {
@@ -876,6 +981,21 @@
     $('#btnHelp').onclick = function () { renderHelp(); openDrawer('helpDrawer'); };
     $('#btnTheme').onclick = function () { applyTheme(state.theme === 'dark' ? 'light' : 'dark'); };
     $('#chipKicad').onclick = function () { openDrawer('settingsDrawer'); };
+    $('#chipLlm').onclick = function () { openDrawer('modelDrawer'); };
+
+    // v2.4 大模型配置抽屉
+    $('#btnTestLlm').onclick = testLlm;
+    $('#btnSaveModel').onclick = saveModelConfig;
+    $$('#modelPresets .preset-card').forEach(function (b) {
+      b.onclick = function () {
+        $$('#modelPresets .preset-card').forEach(function (x) { x.classList.remove('active'); });
+        b.classList.add('active');
+        $('#mdlBaseUrl').value = b.dataset.base;
+        $('#mdlModel').value = b.dataset.model;
+        showModelResult('已选择预设：' + b.querySelector('b').textContent
+          + '。填入 API Key 后点「测试连接」。', true);
+      };
+    });
 
     // 抽屉关闭
     $('#overlay').onclick = closeDrawers;

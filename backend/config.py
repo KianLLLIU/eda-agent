@@ -31,7 +31,7 @@ OUTPUT_DIR = os.environ.get("EDA_AGENT_OUTPUT", DEFAULT_OUTPUT)
 USER_DATA_DIR = os.environ.get("EDA_AGENT_DATA", os.path.join(os.path.expanduser("~"), ".eda-agent"))
 
 APP_NAME = "EDA Agent"
-APP_VERSION = "2.3.0"
+APP_VERSION = "2.4.0"
 IS_FROZEN = _is_frozen()
 
 # 应用安装目录（exe 所在目录）。打包后外部工具（Java/Freerouting）装在这里，

@@ -52,3 +52,5 @@ tools/pylibs/
 
 # 下划线开头的临时脚本
 _*.py
+
+.dl.py

@@ -27,7 +27,7 @@
     </div>
 
     <div class="status-bar">
-      <span class="chip" id="chipLlm"><span class="dot"></span><span class="chip-txt">检测中…</span></span>
+      <span class="chip clickable" id="chipLlm" title="点击配置大模型 API"><span class="dot"></span><span class="chip-txt">检测中…</span></span>
       <span class="chip ok" id="chipNlu" title="本地 NLU 引擎"><span class="dot"></span><span class="chip-txt">NLU 就绪</span></span>
       <span class="chip clickable" id="chipKicad" title="点击查看 / 设置 KiCad 路径"><span class="dot"></span><span class="chip-txt">KiCad 检测中…</span></span>
     </div>
@@ -206,6 +206,7 @@
             <h3 class="result-title" id="resultTitle">设计结果</h3>
             <p class="result-meta" id="resultMeta"></p>
             <p class="route-badge" id="routeBadge" hidden></p>
+            <p class="check-badge" id="checkBadge" hidden></p>
           </div>
           <div class="result-actions">
             <a class="btn-download" id="btnDownload" href="#" download>
@@ -233,6 +234,7 @@
           <button class="tab" data-tab="report">工作汇报</button>
           <button class="tab" data-tab="guide">操作指南</button>
           <button class="tab" data-tab="hardware">硬件需求</button>
+          <button class="tab" data-tab="selfcheck">自检报告</button>
           <button class="tab" data-tab="json">设计 JSON</button>
         </div>
 
@@ -242,6 +244,7 @@
           <div class="panel" id="panel-report"></div>
           <div class="panel" id="panel-guide"></div>
           <div class="panel" id="panel-hardware"></div>
+          <div class="panel" id="panel-selfcheck"></div>
           <div class="panel json-panel" id="panel-json">
             <div class="json-tools">
               <span class="json-hint">可直接编辑元件参数 / 网络，点「应用修改」重新生成工程与原理图</span>
@@ -321,6 +324,65 @@
         <p class="path-line"><b>数据目录</b><span id="pathData">—</span></p>
         <p class="path-line"><b>运行模式</b><span id="pathMode">—</span></p>
         <p class="settings-note">桌面版的数据保存在用户主目录，卸载时可自行清理。</p>
+      </div>
+    </div>
+  </aside>
+
+  <!-- v2.4：大模型 API 配置（独立抽屉，点击顶栏 LLM 徽标打开） -->
+  <aside class="drawer wide" id="modelDrawer" hidden>
+    <div class="drawer-head">
+      <h2>大模型 API 配置</h2>
+      <button class="icon-btn" data-close-drawer="modelDrawer">✕</button>
+    </div>
+    <div class="drawer-body">
+      <p class="settings-note" style="margin-top:0">选择预设或手动填写任意 OpenAI 兼容接口。API Key 只保存在当前进程内存，不写入磁盘。</p>
+
+      <div class="settings-section">
+        <h3>快速预设</h3>
+        <div class="model-presets" id="modelPresets">
+          <button class="preset-card" data-base="https://api.hunyuan.cloud.tencent.com/v1" data-model="hy4-flash">
+            <b>腾讯云 Hy4 flash</b><span>api.hunyuan.cloud.tencent.com</span>
+          </button>
+          <button class="preset-card" data-base="https://api.deepseek.com/v1" data-model="deepseek-chat">
+            <b>DeepSeek</b><span>api.deepseek.com</span>
+          </button>
+          <button class="preset-card" data-base="https://api.openai.com/v1" data-model="gpt-4o-mini">
+            <b>OpenAI</b><span>api.openai.com</span>
+          </button>
+          <button class="preset-card" data-base="https://dashscope.aliyuncs.com/compatible-mode/v1" data-model="qwen-plus">
+            <b>通义千问</b><span>dashscope.aliyuncs.com</span>
+          </button>
+          <button class="preset-card" data-base="http://localhost:11434/v1" data-model="qwen2.5">
+            <b>Ollama 本地</b><span>localhost:11434</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>连接参数</h3>
+        <label class="field-label">接口地址 (Base URL)</label>
+        <input class="field-input" id="mdlBaseUrl" placeholder="https://api.hunyuan.cloud.tencent.com/v1" autocomplete="off" />
+        <label class="field-label">模型 ID</label>
+        <input class="field-input" id="mdlModel" placeholder="hy4-flash" autocomplete="off" />
+        <label class="field-label">API Key <span class="field-hint">（留空 = 保持当前已填的 Key）</span></label>
+        <input class="field-input" id="mdlApiKey" type="password" placeholder="sk-..." autocomplete="off" />
+        <label class="field-label">超时（秒）</label>
+        <input class="field-input" id="mdlTimeout" type="number" min="5" max="300" value="90" />
+        <label class="checkbox-row"><input type="checkbox" id="mdlNoFree" /> <span>关闭免费在线 LLM（只用上面配置的模型）</span></label>
+
+        <div class="model-actions">
+          <button class="btn-outline" id="btnTestLlm">测试连接</button>
+          <button class="btn-primary" id="btnSaveModel">保存并启用</button>
+        </div>
+        <p class="model-result" id="modelResult" hidden></p>
+      </div>
+
+      <div class="settings-section">
+        <h3>当前生效配置</h3>
+        <p class="path-line"><b>接口</b><span id="mdlCurBase">—</span></p>
+        <p class="path-line"><b>模型</b><span id="mdlCurModel">—</span></p>
+        <p class="path-line"><b>Key 状态</b><span id="mdlCurKey">—</span></p>
+        <p class="path-line"><b>模式</b><span id="mdlCurMode">—</span></p>
       </div>
     </div>
   </aside>

@@ -19,6 +19,7 @@ v2.0 新增能力：
 from __future__ import annotations
 
 import glob
+import json
 import os
 import platform
 import subprocess
@@ -194,6 +195,48 @@ def _safe_path(path: str):
     return full
 
 
+def _selfcheck_markdown(sc: dict) -> str:
+    """把自检报告渲染成 Markdown（工程包内可下载）。"""
+    if not sc or sc.get("summary", "").startswith("未执行"):
+        return "# 自检报告\n\n未执行自检。\n"
+    lines = [
+        "# 电路自检报告",
+        "",
+        "- **结论**：%s" % sc.get("summary", "—"),
+        "- **评分**：%s / 100" % sc.get("score", "—"),
+        "- **错误 / 警告**：%s / %s" % (sc.get("error_count", 0), sc.get("warning_count", 0)),
+        "- **耗时**：%s ms" % sc.get("elapsed_ms", "—"),
+        "",
+        "## 通电模拟（静态电气推理）",
+        "",
+        "- 判定：**%s**" % (sc.get("power_on", {}).get("verdict") or "—"),
+        "- 电源回路闭合：%s" % ("是" if sc.get("power_on", {}).get("power_loop_closed") else "否"),
+        "- 信号链可达：%s" % ("是" if sc.get("power_on", {}).get("signal_chain_reachable") else "否"),
+        "- 到达元件：%s / %s" % (sc.get("power_on", {}).get("components_reached", "—"),
+                              sc.get("power_on", {}).get("components_total", "—")),
+        "",
+        "## 问题清单",
+    ]
+    issues = sc.get("issues") or []
+    if not issues:
+        lines.append("")
+        lines.append("未发现问题。")
+    else:
+        lines.append("")
+        lines.append("| 级别 | 代码 | 说明 |")
+        lines.append("|---|---|---|")
+        for i in issues:
+            lines.append("| %s | %s | %s |" % (i.get("severity"), i.get("code"),
+                                              str(i.get("message")).replace("|", "\\|")))
+    fixes = sc.get("fixes") or []
+    if fixes:
+        lines += ["", "## 自动修正", ""]
+        lines += ["- " + f for f in fixes]
+    lines += ["", "---", "", "> 通模拟为基于网表的静态电气推理，不是 SPICE 瞬态仿真；",
+              "> 实际焊接上电前请用万用表确认电源电压与极性。"]
+    return "\n".join(lines) + "\n"
+
+
 def assemble_result(design: dict, requirement: str, mode: str,
                     difficulty: str = "intermediate", style: str = "classic",
                     project_name: str | None = None, session: str | None = None) -> dict:
@@ -225,6 +268,37 @@ def assemble_result(design: dict, requirement: str, mode: str,
             routing = {"ok": False, "skipped": False, "stats": {},
                        "error": "自动布线异常: %s" % e}
 
+    # v2.4：布线后自检 → 通电模拟 → DRC 有问题则用更大间距重布一次。
+    selfcheck = {"ok": True, "score": 100, "summary": "未执行自检",
+                 "issues": [], "fixes": [], "power_on": {}, "kicad": {}}
+    try:
+        from .agent import selfcheck as sc
+
+        report, fixed_design = sc.run_selfcheck(
+            design, files,
+            auto_fix_enabled=os.environ.get("EDA_AI_SELFCHECK_FIX", "1") != "0")
+        selfcheck = report
+        # DRC 有 error 且布线成功 → 加大焊盘余量重布一次（自动修正）
+        drc_err = (report.get("kicad") or {}).get("drc", {}).get("errors", 0) or 0
+        if (drc_err > 0 and routing.get("ok")
+                and os.environ.get("EDA_AI_ROUTE_RETRY", "1") != "0"):
+            os.environ["FREEROUTE_MARGIN"] = "0.8"
+            pcb_text = _read(files["pcb"])
+            retry = freerouting.route_board(design, pcb_text, out_dir, timeout=120)
+            if retry["ok"]:
+                with open(files["pcb"], "w", encoding="utf-8") as f:
+                    f.write(retry["pcb_text"])
+                report2, _ = sc.run_selfcheck(design, files, auto_fix_enabled=False)
+                if report2.get("error_count", 99) < report.get("error_count", 99):
+                    selfcheck = report2
+                    selfcheck["fixes"] = (report.get("fixes") or []) + ["加大焊盘间距后重新布线"]
+                    routing = {"ok": True, "skipped": False,
+                               "stats": retry["stats"], "error": ""}
+            os.environ.pop("FREEROUTE_MARGIN", None)
+    except Exception as e:  # noqa: BLE001
+        selfcheck = {"ok": False, "score": 0, "summary": "自检异常: %s" % e,
+                     "issues": [], "fixes": [], "power_on": {}, "kicad": {}}
+
     report_md = work_report(design, requirement, mode)
     guide_md = operation_guide(design, project_name)
     hw_md = hardware_requirements(design)
@@ -233,7 +307,12 @@ def assemble_result(design: dict, requirement: str, mode: str,
         with open(os.path.join(out_dir, fname), "w", encoding="utf-8") as f:
             f.write(content)
 
-    zip_path = package_project(out_dir, project_name)  # 布线后再打包
+    # 自检报告落盘（工程包内可下载）
+    sc_md = _selfcheck_markdown(selfcheck)
+    with open(os.path.join(out_dir, "自检报告.md"), "w", encoding="utf-8") as f:
+        f.write(sc_md)
+
+    zip_path = package_project(out_dir, project_name)  # 布线+自检后再打包
 
     return {
         "design": design,
@@ -251,6 +330,8 @@ def assemble_result(design: dict, requirement: str, mode: str,
         "files": {k: os.path.basename(v) for k, v in files.items()},
         "output_dir": out_dir,
         "routing": routing,
+        "selfcheck": selfcheck,
+        "selfcheck_md": sc_md,
     }
 
 
@@ -619,6 +700,62 @@ def get_settings():
 @app.post("/api/settings")
 def set_settings(data: dict):
     return config.apply_settings(data)
+
+
+class LlmTestRequest(BaseModel):
+    base_url: str = Field("", description="OpenAI 兼容接口根地址")
+    api_key: str = Field("", description="API Key；留空则用当前生效配置")
+    model: str = Field("", description="模型 ID；留空则用当前生效配置")
+
+
+@app.post("/api/settings/test-llm")
+def test_llm(req: LlmTestRequest):
+    """测试大模型 API 连通性：发一条最小 chat 请求，返回延迟与模型回复摘要。
+
+    不修改当前生效配置；前端可在"连接测试"通过后再点保存。
+    """
+    s = config.llm_settings()
+    base = (req.base_url or s["base_url"]).rstrip("/")
+    model = req.model or s["model"]
+    key = req.api_key or s["api_key"]
+    if not base:
+        raise HTTPException(status_code=400, detail="请先填写接口地址 (Base URL)")
+    if not model:
+        raise HTTPException(status_code=400, detail="请先填写模型名称")
+
+    import httpx
+
+    url = base + "/chat/completions"
+    payload = {
+        "model": model,
+        "messages": [{"role": "user", "content": "回复 OK 两个字即可"}],
+        "max_tokens": 16,
+        "stream": False,
+    }
+    headers = {"Content-Type": "application/json"}
+    if key:
+        headers["Authorization"] = "Bearer " + key
+    t0 = time.time()
+    try:
+        with httpx.Client(timeout=20) as client:
+            resp = client.post(url, json=payload, headers=headers)
+        elapsed = round((time.time() - t0) * 1000)
+        if resp.status_code >= 400:
+            return {"ok": False, "status": resp.status_code,
+                    "latency_ms": elapsed,
+                    "error": resp.text[:300]}
+        data = resp.json()
+        content = ""
+        try:
+            content = data["choices"][0]["message"]["content"][:80]
+        except (KeyError, IndexError, TypeError):
+            content = json.dumps(data, ensure_ascii=False)[:80]
+        return {"ok": True, "status": resp.status_code,
+                "latency_ms": elapsed, "model": model,
+                "reply": content}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "latency_ms": round((time.time() - t0) * 1000),
+                "error": str(e)[:300]}
 
 
 @app.post("/api/render")

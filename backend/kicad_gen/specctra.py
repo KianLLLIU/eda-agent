@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 import math
+import os
 import uuid
 
 from . import footprints as fplib
@@ -175,7 +176,11 @@ def export_dsn(design, pcb_text):
         for pad in fp["pads"]:
             # pin 相对 place 原点的偏移，已含旋转 → 无需 Freerouting 再旋转
             lx, ly = pad["x"] - fp["x"], pad["y"] - fp["y"]
-            w, h = pad["w"] + 0.6, pad["h"] + 0.6
+            try:
+                margin = float(os.environ.get("FREEROUTE_MARGIN", "0.6"))
+            except ValueError:
+                margin = 0.6
+            w, h = pad["w"] + margin, pad["h"] + margin
             pname = "P_%sx%s%s" % (_f(w * UNITS_PER_MM), _f(h * UNITS_PER_MM),
                                    "" if pad["th"] else "s")
             padstacks[pname] = (w, h, pad["th"])
