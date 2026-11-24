@@ -33,7 +33,7 @@ from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import config, kicad_detect
+from . import config, kicad_detect, offline_library
 from .agent import (
     generate_design_json,
     apply_revision,
@@ -45,6 +45,7 @@ from .agent import (
     load_template_by_name,
     nlu,
     assistant,
+    dialogue,
 )
 from .agent.validator import DesignError, validate_design
 from .kicad_gen.render_svg import build_svg
@@ -111,6 +112,27 @@ class TemplateRequest(BaseModel):
     template_id: str = Field(..., description="模板 ID")
     style: str = Field("classic")
     difficulty: str = Field("intermediate")
+
+
+class LibraryItemRequest(BaseModel):
+    """新增 / 编辑离线库条目"""
+    item_id: str | None = Field(None, description="编辑时传；新增留空")
+    name: str = Field("", description="板子名称")
+    description: str = Field("", description="板子描述")
+    category: str = Field("其他", description="分类")
+    tags: list[str] = Field(default_factory=list, description="标签")
+    design: dict | None = Field(None, description="新增时的完整 design JSON")
+
+
+class LibraryUseRequest(BaseModel):
+    item_id: str = Field(..., description="库条目 ID（builtin:xxx 或 user-xxx）")
+    style: str = Field("classic")
+    difficulty: str = Field("intermediate")
+
+
+class VersionRequest(BaseModel):
+    version: int = Field(..., description="要回退的版本号 v")
+    session_id: str | None = Field(None)
 
 
 class RenderRequest(BaseModel):
@@ -532,6 +554,16 @@ def chat(req: ChatRequest):
     intent = analysis["intent"]["name"]
     status_info = _status_dict()
 
+    # v2.5：跨轮需求累积 —— 从日常对话的碎片里拼需求档案
+    conv.remember_requirement(analysis, message)
+    want_design, want_reason = dialogue.wants_design(message, analysis, conv.requirement, has_design)
+    # 隐含绘图意图：NLU 没判 generate/revise，但档案已足够 + 语义像需求 → 当作生成
+    if want_design and intent in ("unknown", "help", "status") and conv.requirement.signal_count() >= 2:
+        intent = "revise" if has_design else "generate"
+        analysis["intent"] = {"name": intent, "label": "生成电路" if not has_design else "修改电路",
+                              "confidence": 0.7, "matched": ["跨轮需求累积"], "inferred": True}
+    analysis["requirement"] = dialogue.build_digest(conv.requirement, message)
+
     # 明确要「换一个电路」时自动开新会话
     if intent == "generate" and has_design and any(
             k in message for k in ("新做", "另外做", "重新做", "换一个电路", "再做一个", "从头做")):
@@ -603,7 +635,25 @@ def chat(req: ChatRequest):
         conv.zip_path = result["download_zip"]
         result["changes"] = changes
 
+        # v2.5：版本快照 —— 同一任务可持续迭代、可回退
+        snap = conv.snapshot("第 %d 版" % (conv.iteration + 1), changes)
+        result["version"] = snap
+        result["iteration"] = conv.iteration
+
+        # v2.5：任务特征归档到离线库（失败不影响生成结果）
+        try:
+            lib_meta = offline_library.archive(
+                conv.design, message, analysis,
+                name=conv.design.get("title", ""),
+                project_name=conv.project_name,
+            )
+            result["archived"] = {"id": lib_meta["id"], "name": lib_meta["name"],
+                                  "deduped": lib_meta.get("deduped", False)}
+        except Exception as e:  # noqa: BLE001
+            result["archived"] = {"error": str(e)[:80]}
+
     conv.add_turn("assistant", reply_pack["reply"], {"intent": intent})
+    conv.requirement.confirmed = False  # 出图后重置确认态，等下一次新需求
     STORE.commit()
 
     return {
@@ -648,6 +698,124 @@ def apply_template(req: TemplateRequest):
     conv.add_turn("assistant", "已套用模板「%s」。" % design.get("title", req.template_id))
     STORE.commit()
     return {"result": result, "session": conv.brief()}
+
+
+# ---------------------------------------------------------------------------
+# v2.5：离线板子库（归档 / 检索 / 增删改 / 直接调用）
+# ---------------------------------------------------------------------------
+@app.get("/api/library")
+def library_list(category: str | None = None, source: str | None = None):
+    return {"items": offline_library.list_items(category=category, source=source),
+            "stats": offline_library.stats()}
+
+
+@app.get("/api/library/search")
+def library_search(q: str = "", top_k: int = 5):
+    return {"items": offline_library.search(q, top_k=top_k), "query": q}
+
+
+@app.get("/api/library/{item_id}")
+def library_get(item_id: str):
+    try:
+        return offline_library.get_item(item_id)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+
+@app.post("/api/library")
+def library_add(req: LibraryItemRequest):
+    if not req.design:
+        raise HTTPException(status_code=400, detail="新增板子必须提供 design JSON")
+    try:
+        meta = offline_library.add_item(req.name or "未命名板子", req.description,
+                                        req.category, req.design, req.tags)
+        return {"ok": True, "item": meta}
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@app.put("/api/library/{item_id}")
+def library_update(item_id: str, req: LibraryItemRequest):
+    patch = {k: v for k, v in (("name", req.name), ("description", req.description),
+                               ("category", req.category), ("tags", req.tags)) if v is not None}
+    try:
+        return {"ok": True, "item": offline_library.update_item(item_id, patch)}
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+
+@app.delete("/api/library/{item_id}")
+def library_delete(item_id: str):
+    try:
+        ok = offline_library.delete_item(item_id)
+        return {"ok": ok}
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+
+
+@app.post("/api/library/use")
+def library_use(req: LibraryUseRequest):
+    """直接调用库里的板子：生成完整工程 + 自动布线 + 自检"""
+    try:
+        entry = offline_library.get_item(req.item_id)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    design = entry["design"]
+    conv = STORE.current()
+    result = assemble_result(design, "调用离线库：" + entry["meta"].get("name", req.item_id),
+                             "library", req.difficulty, req.style,
+                             project_name=_slugify(design.get("title", "circuit")))
+    result["keywords"] = []
+    conv.design = design
+    conv.project_name = result["project_name"]
+    conv.zip_path = result["download_zip"]
+    conv.snapshot("调用库：" + entry["meta"].get("name", req.item_id))
+    offline_library.mark_used(req.item_id)
+    conv.add_turn("user", "调用离线库板子：" + entry["meta"].get("name", req.item_id))
+    conv.add_turn("assistant", "已从离线库调出「%s」并生成工程。" % entry["meta"].get("name", req.item_id))
+    STORE.commit()
+    return {"result": result, "session": conv.brief(), "item": entry["meta"]}
+
+
+@app.post("/api/library/archive-current")
+def library_archive_current():
+    """把当前会话的设计手动归档到离线库"""
+    conv = STORE.current()
+    if not conv.design:
+        raise HTTPException(status_code=400, detail="当前会话还没有设计可归档")
+    meta = offline_library.archive(
+        conv.design, "手动归档：" + (conv.design.get("title") or conv.title),
+        name=conv.design.get("title", conv.title),
+        project_name=conv.project_name, dedupe=False,
+    )
+    return {"ok": True, "item": meta}
+
+
+# ---------------------------------------------------------------------------
+# v2.5：设计版本快照（同一任务内持续迭代、可回退）
+# ---------------------------------------------------------------------------
+@app.get("/api/versions")
+def version_list(session_id: str | None = None):
+    conv = STORE.get(session_id) if session_id else STORE.current()
+    return {"versions": conv.version_list(), "iteration": conv.iteration}
+
+
+@app.post("/api/version/rollback")
+def version_rollback(req: VersionRequest):
+    conv = STORE.get(req.session_id) if req.session_id else STORE.current()
+    try:
+        info = conv.rollback(req.version)
+        # 回退后重新生成工程文件，保证 zip / 图与回退版本一致
+        result = assemble_result(conv.design, "回退到 v%d" % req.version, "rollback",
+                                 "intermediate", "classic",
+                                 project_name=conv.project_name or _slugify(conv.design.get("title", "circuit")))
+        conv.zip_path = result["download_zip"]
+        STORE.commit()
+        return {"ok": True, "rollback": info, "result": result, "session": conv.brief()}
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
 
 
 @app.get("/api/history")

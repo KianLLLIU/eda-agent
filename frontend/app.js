@@ -448,9 +448,13 @@
       if (d.result) {
         allStepsDone();
         renderResult(d.result);
+        var vb = $('#btnVersion');
+        if (vb) { vb.hidden = false; vb.textContent = 'v' + (d.result.iteration || 1) + ' 历史'; }
       } else {
         resetSteps();
       }
+      // v2.5 需求理解卡：把跨轮累积的需求展示给用户
+      if (d.analysis && d.analysis.requirement) renderRequirement(d.analysis.requirement);
 
       addMessage('assistant', d.reply || '已处理。');
       renderSuggestions(d.suggestions);
@@ -479,6 +483,8 @@
         case 'download': if (state.result) window.location.href = $('#btnDownload').href; break;
         case 'render': if (state.design) rerender(); break;
         case 'template': applyTemplate(a.value); break;
+        case 'library': openDrawer('libraryDrawer'); break;
+        case 'archive': archiveCurrent(); break;
         default: break;
       }
     });
@@ -521,6 +527,8 @@
     if (id === 'historyDrawer') loadHistory();
     if (id === 'settingsDrawer') { loadSettings(); loadKicad(false); }
     if (id === 'modelDrawer') loadModelConfig();
+    if (id === 'libraryDrawer') loadLibrary(false);
+    if (id === 'versionDrawer') loadVersions();
   }
   function closeDrawers() {
     $('#overlay').hidden = true;
@@ -700,6 +708,288 @@
     } catch (e) {
       showModelResult('✗ 保存失败：' + escapeHtml(e.message), false);
     }
+  }
+
+  /* ============================================================= v2.5 新能力 */
+
+  /* ---------- 跨轮需求理解卡 ---------- */
+  function renderRequirement(req) {
+    if (!req) return;
+    var card = $('#requirementCard');
+    card.hidden = false;
+    var score = req.completeness || 0;
+    $('#reqScore').textContent = score + '%';
+    $('#reqFill').style.width = score + '%';
+    $('#reqFill').className = 'req-fill' + (score >= 80 ? ' ready' : '');
+    $('#reqSummary').textContent = req.summary || '';
+    var miss = $('#reqMissing');
+    if (req.missing && req.missing.length) {
+      miss.hidden = false;
+      miss.textContent = '还差：' + req.missing.slice(0, 3).join('、');
+    } else { miss.hidden = true; }
+    $('#reqFoot').textContent = req.hint || '';
+  }
+  function hideRequirement() { $('#requirementCard').hidden = true; }
+
+  /* ---------- 语音输入（Web Speech API，桌面 WebView2 / Chrome 可用） ---------- */
+  function initVoice() {
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    var btn = $('#btnVoice');
+    if (!SR) {
+      btn.hidden = true;  // 不支持则隐藏，不影响其它功能
+      return;
+    }
+    var rec = new SR();
+    rec.lang = 'zh-CN';
+    rec.continuous = false;
+    rec.interimResults = true;
+    rec.maxAlternatives = 1;
+    state.voiceRec = rec;
+    state.voiceOn = false;
+
+    rec.onresult = function (e) {
+      var finalText = '', interim = '';
+      for (var i = e.resultIndex; i < e.results.length; i++) {
+        var seg = e.results[i][0].transcript;
+        if (e.results[i].isFinal) finalText += seg; else interim += seg;
+      }
+      var input = $('#chatInput');
+      if (interim) input.value = (state.voiceBase || '') + interim;
+      if (finalText) {
+        input.value = (input.value || (state.voiceBase || '') + finalText).trim();
+        onInputChange();
+        // 说话结束自动发送，减少一次点击；用户可在识别中再次点按钮停止
+        setTimeout(function () { if (input.value.trim()) sendMessage(input.value); }, 200);
+      }
+    };
+    rec.onerror = function (e) {
+      stopVoice();
+      toast(e.error === 'not-allowed' ? '麦克风权限被拒绝，请在浏览器设置里允许'
+        : ('语音识别失败：' + e.error), true);
+    };
+    rec.onend = function () { stopVoice(); };
+
+    btn.onclick = function () {
+      if (state.voiceOn) { stopVoice(); return; }
+      try {
+        state.voiceBase = $('#chatInput').value ? $('#chatInput').value.trim() + ' ' : '';
+        rec.start();
+        state.voiceOn = true;
+        btn.classList.add('listening');
+        btn.title = '点击停止录音';
+        $('#hintText').textContent = '正在听… 说完自动发送';
+      } catch (e) { toast('无法启动语音识别：' + e.message, true); }
+    };
+  }
+  function stopVoice() {
+    if (state.voiceRec) { try { state.voiceRec.stop(); } catch (e) { /* ignore */ } }
+    state.voiceOn = false;
+    var btn = $('#btnVoice');
+    if (btn) { btn.classList.remove('listening'); btn.title = '点击说话（语音输入）'; }
+  }
+
+  /* ---------- 离线板子库 ---------- */
+  var libState = { items: [], category: '', editing: null };
+
+  async function loadLibrary(keepSearch) {
+    var q = keepSearch ? ($('#libSearch').value || '').trim() : '';
+    var listEl = $('#libList');
+    listEl.innerHTML = '<div class="empty-drawer">加载中…</div>';
+    try {
+      var d;
+      if (q) { d = await api('/api/library/search?q=' + encodeURIComponent(q) + '&top_k=40'); }
+      else {
+        d = await api('/api/library' + (libState.category ? '?category=' + encodeURIComponent(libState.category) : ''));
+      }
+      libState.items = d.items || [];
+      renderLibStats(d.stats);
+      renderLibFilters();
+      renderLibList();
+    } catch (e) { listEl.innerHTML = '<div class="empty-drawer">加载失败：' + esc(e.message) + '</div>'; }
+  }
+
+  function renderLibStats(stats) {
+    if (!stats) return;
+    $('#libStats').innerHTML =
+      '<span>共 <b>' + stats.total + '</b> 块</span>' +
+      '<span>内置 <b>' + stats.builtin + '</b></span>' +
+      '<span>我的 <b>' + stats.user + '</b></span>';
+  }
+
+  function renderLibFilters() {
+    var f = $('#libFilters'); f.innerHTML = '';
+    var cats = ['', '电源', 'LED 灯光', '传感器', '驱动', '接口', '其他'];
+    cats.forEach(function (c) {
+      var b = document.createElement('button');
+      b.className = 'lib-filter' + (libState.category === c ? ' active' : '');
+      b.textContent = c || '全部';
+      b.onclick = function () { libState.category = c; $('#libSearch').value = ''; loadLibrary(false); };
+      f.appendChild(b);
+    });
+  }
+
+  function renderLibList() {
+    var el = $('#libList');
+    if (!libState.items.length) { el.innerHTML = '<div class="empty-drawer">没有匹配的板子</div>'; return; }
+    el.innerHTML = '';
+    libState.items.forEach(function (it) {
+      var card = document.createElement('div');
+      card.className = 'lib-card';
+      var isBuiltin = it.source === 'builtin';
+      var tags = (it.tags || []).slice(0, 5).map(function (t) { return '<span class="lib-tag">' + esc(t) + '</span>'; }).join('');
+      card.innerHTML =
+        '<div class="lib-card-head">' +
+          '<span class="lib-name">' + esc(it.name || it.title || '未命名') + '</span>' +
+          '<span class="lib-badge ' + (isBuiltin ? 'b' : 'u') + '">' + (isBuiltin ? '内置' : '我的') + '</span>' +
+        '</div>' +
+        '<div class="lib-desc">' + esc(it.description || '（无描述）') + '</div>' +
+        '<div class="lib-meta">' + esc(it.category || '其他') +
+          ' · ' + (it.component_count != null ? it.component_count : '—') + ' 元件' +
+          ' · ' + (it.net_count != null ? it.net_count : '—') + ' 网络' +
+          ' · 调用 ' + (it.use_count || 0) + ' 次' + '</div>' +
+        '<div class="lib-tags">' + tags + '</div>' +
+        '<div class="lib-actions"></div>';
+      var act = card.querySelector('.lib-actions');
+      var use = document.createElement('button');
+      use.className = 'btn-outline'; use.textContent = '调用出图';
+      use.onclick = function () { useLibraryItem(it.id); };
+      act.appendChild(use);
+      if (!isBuiltin) {
+        var edit = document.createElement('button');
+        edit.className = 'btn-outline'; edit.textContent = '编辑';
+        edit.onclick = function () { openLibEditor(it); };
+        act.appendChild(edit);
+        var del = document.createElement('button');
+        del.className = 'btn-danger'; del.textContent = '删除';
+        del.onclick = function () { deleteLibraryItem(it); };
+        act.appendChild(del);
+      }
+      el.appendChild(card);
+    });
+  }
+
+  function openLibEditor(item) {
+    libState.editing = item ? item.id : null;
+    $('#libEditorTitle').textContent = item ? '编辑板子' : '新增板子';
+    $('#libName').value = item ? (item.name || '') : '';
+    $('#libDesc').value = item ? (item.description || '') : '';
+    $('#libCategory').value = item ? (item.category || '') : '';
+    $('#libTags').value = item ? ((item.tags || []).join(', ')) : '';
+    $('#libJsonWrap').hidden = !!item;  // 编辑不改 design
+    if (!item && state.design) {
+      $('#libJson').value = JSON.stringify(state.design, null, 2);
+      if (!$('#libName').value) $('#libName').value = state.design.title || '';
+    }
+    $('#libEditor').hidden = false;
+    $('#libEditor').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  async function saveLibraryItem() {
+    var name = $('#libName').value.trim();
+    if (!name) { toast('请填写名称', true); return; }
+    var payload = {
+      item_id: libState.editing || undefined,
+      name: name,
+      description: $('#libDesc').value.trim(),
+      category: $('#libCategory').value.trim() || '其他',
+      tags: $('#libTags').value.split(/[,，]/).map(function (x) { return x.trim(); }).filter(Boolean)
+    };
+    try {
+      if (libState.editing) {
+        await api('/api/library/' + encodeURIComponent(libState.editing),
+                  { method: 'PUT', body: payload });
+        toast('已保存修改');
+      } else {
+        var json = $('#libJson').value.trim();
+        if (!json) { toast('新增板子必须填设计 JSON', true); return; }
+        payload.design = JSON.parse(json);
+        await api('/api/library', { method: 'POST', body: payload });
+        toast('已新增到离线库');
+      }
+      $('#libEditor').hidden = true;
+      libState.editing = null;
+      loadLibrary(false);
+    } catch (e) { toast('保存失败：' + e.message, true); }
+  }
+
+  async function deleteLibraryItem(it) {
+    if (!window.confirm('确定删除「' + (it.name || it.id) + '」？此操作不可恢复。')) return;
+    try {
+      await api('/api/library/' + encodeURIComponent(it.id), { method: 'DELETE' });
+      toast('已删除');
+      loadLibrary(false);
+    } catch (e) { toast('删除失败：' + e.message, true); }
+  }
+
+  async function useLibraryItem(id) {
+    if (state.generating) { toast('正在处理上一条请求，请稍候'); return; }
+    closeDrawers();
+    state.generating = true;
+    $('#sendBtn').disabled = true;
+    setStageBadge('正在从库调出…');
+    try {
+      var d = await api('/api/library/use', {
+        method: 'POST',
+        body: { item_id: id, style: state.style, difficulty: state.difficulty }
+      });
+      state.sessionId = d.session_id;
+      state.design = d.result.design;
+      state.result = d.result;
+      allStepsDone();
+      renderResult(d.result);
+      addMessage('user', '调用离线库：' + (d.item.name || id));
+      addMessage('assistant', '已从离线库调出「' + (d.item.name || id) + '」并生成工程。');
+      toast('已从库调出并生成');
+    } catch (e) { toast('调用失败：' + e.message, true); }
+    finally { state.generating = false; $('#sendBtn').disabled = false; }
+  }
+
+  async function archiveCurrent() {
+    if (!state.design) { toast('当前没有可归档的设计', true); return; }
+    try {
+      var d = await api('/api/library/archive-current', { method: 'POST', body: {} });
+      toast('已归档到离线库：' + (d.item.name || d.item.id));
+    } catch (e) { toast('归档失败：' + e.message, true); }
+  }
+
+  /* ---------- 版本历史 ---------- */
+  async function loadVersions() {
+    var el = $('#versionList');
+    el.innerHTML = '<div class="empty-drawer">加载中…</div>';
+    try {
+      var d = await api('/api/versions?session_id=' + encodeURIComponent(state.sessionId || ''));
+      if (!d.versions.length) { el.innerHTML = '<div class="empty-drawer">还没有版本快照</div>'; return; }
+      el.innerHTML = '';
+      d.versions.slice().reverse().forEach(function (v) {
+        var row = document.createElement('div');
+        row.className = 'version-row';
+        row.innerHTML =
+          '<div class="version-info"><b>v' + v.v + '</b> ' + esc(v.label) +
+            '<div class="version-sub">' + v.components + ' 元件 · ' +
+            new Date(v.ts * 1000).toLocaleString('zh-CN') + '</div>' +
+            (v.changes && v.changes.length ? '<div class="version-changes">' +
+              esc(v.changes.slice(0, 2).join('；')) + '</div>' : '') + '</div>';
+        var btn = document.createElement('button');
+        btn.className = 'btn-outline'; btn.textContent = '恢复';
+        btn.onclick = function () { rollbackVersion(v.v); };
+        row.appendChild(btn);
+        el.appendChild(row);
+      });
+    } catch (e) { el.innerHTML = '<div class="empty-drawer">加载失败：' + esc(e.message) + '</div>'; }
+  }
+
+  async function rollbackVersion(v) {
+    if (!window.confirm('确定回退到 v' + v + '？当前工程会被覆盖（可再回退到其它版本）。')) return;
+    closeDrawers();
+    try {
+      var d = await api('/api/version/rollback', {
+        method: 'POST', body: { version: v, session_id: state.sessionId }
+      });
+      state.result = d.result;
+      state.design = d.result.design;
+      renderResult(d.result);
+      toast('已回退到 v' + v);
+    } catch (e) { toast('回退失败：' + e.message, true); }
   }
 
   function applyTheme(t) {
@@ -967,7 +1257,8 @@
       $('#stageEmpty').hidden = false;
       $('#stageBadge').hidden = true;
       $('#suggestionRow').innerHTML = '';
-      hideInsight(); resetSteps();
+      hideInsight(); hideRequirement(); resetSteps();
+      var vb = $('#btnVersion'); if (vb) vb.hidden = true;
       if (!silent) toast('已新建会话');
     } catch (e) { toast('新建会话失败：' + e.message, true); }
   }
@@ -977,6 +1268,9 @@
     // 顶栏
     $('#btnNew').onclick = function () { newSession(false); };
     $('#btnHistory').onclick = function () { openDrawer('historyDrawer'); };
+    $('#btnLibrary').onclick = function () { openDrawer('libraryDrawer'); };
+    $('#btnVersion').onclick = function () { openDrawer('versionDrawer'); };
+    $('#btnArchive').onclick = archiveCurrent;
     $('#btnSettings').onclick = function () { openDrawer('settingsDrawer'); };
     $('#btnHelp').onclick = function () { renderHelp(); openDrawer('helpDrawer'); };
     $('#btnTheme').onclick = function () { applyTheme(state.theme === 'dark' ? 'light' : 'dark'); };
@@ -996,6 +1290,16 @@
           + '。填入 API Key 后点「测试连接」。', true);
       };
     });
+
+    // v2.5 离线库表单
+    $('#btnLibRefresh').onclick = function () { loadLibrary(false); };
+    $('#btnLibNew').onclick = function () { openLibEditor(null); };
+    $('#btnLibCancel').onclick = function () { $('#libEditor').hidden = true; libState.editing = null; };
+    $('#btnLibSave').onclick = saveLibraryItem;
+    $('#libSearch').oninput = function () {
+      clearTimeout($('#libSearch')._t);
+      $('#libSearch')._t = setTimeout(function () { loadLibrary(true); }, 350);
+    };
 
     // 抽屉关闭
     $('#overlay').onclick = closeDrawers;
@@ -1143,6 +1447,7 @@
   async function init() {
     applyTheme(state.theme);
     bind();
+    initVoice();
     loadStatus();
 
     try {

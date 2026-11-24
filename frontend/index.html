@@ -39,6 +39,9 @@
       <button class="icon-btn" id="btnHistory" title="历史会话">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>
       </button>
+      <button class="icon-btn" id="btnLibrary" title="离线板子库（增删改查）">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>
+      </button>
       <button class="icon-btn" id="btnTheme" title="切换深浅主题">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
       </button>
@@ -128,11 +131,26 @@
           <div class="insight-clarify" id="insightClarify" hidden></div>
         </div>
 
+        <!-- v2.5 跨轮需求理解卡 -->
+        <div class="requirement-card" id="requirementCard" hidden>
+          <div class="req-head">
+            <span class="req-title">🧠 我从对话里听懂的需求</span>
+            <span class="req-score" id="reqScore">0%</span>
+          </div>
+          <div class="req-track"><span class="req-fill" id="reqFill"></span></div>
+          <div class="req-summary" id="reqSummary"></div>
+          <div class="req-missing" id="reqMissing" hidden></div>
+          <div class="req-foot" id="reqFoot"></div>
+        </div>
+
         <!-- 建议 chips -->
         <div class="suggestion-row" id="suggestionRow"></div>
 
         <div class="chat-input-wrap">
           <textarea id="chatInput" rows="2" placeholder="描述电路需求，或输入修改指令…  (Enter 发送 / Shift+Enter 换行)" autocomplete="off"></textarea>
+          <button class="voice-btn" id="btnVoice" title="点击说话（语音输入）" aria-label="语音输入">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5M8 22h8"/></svg>
+          </button>
           <button class="send-btn" id="sendBtn" aria-label="发送">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           </button>
@@ -214,6 +232,8 @@
               下载 KiCad 工程
             </a>
             <button class="btn-outline" id="btnOpenKicad" title="用本机 KiCad 打开工程">用 KiCad 打开</button>
+            <button class="btn-outline" id="btnVersion" title="版本历史与回退" hidden>v1</button>
+            <button class="btn-outline" id="btnArchive" title="归档当前板子到离线库">⤓ 归档</button>
           </div>
         </div>
 
@@ -384,6 +404,59 @@
         <p class="path-line"><b>Key 状态</b><span id="mdlCurKey">—</span></p>
         <p class="path-line"><b>模式</b><span id="mdlCurMode">—</span></p>
       </div>
+    </div>
+  </aside>
+
+  <!-- v2.5 离线板子库管理 -->
+  <aside class="drawer wide" id="libraryDrawer" hidden>
+    <div class="drawer-head">
+      <h2>离线板子库</h2>
+      <button class="icon-btn" data-close-drawer="libraryDrawer">✕</button>
+    </div>
+    <div class="drawer-body">
+      <p class="settings-note" style="margin-top:0">每次绘图后自动归档任务特征，方便下次直接调用。内置模板只读，你自己的板子可编辑描述、标签与删除。</p>
+      <div class="lib-stats" id="libStats"></div>
+
+      <div class="lib-toolbar">
+        <input class="field-input" id="libSearch" placeholder="搜索板子 / 器件 / 功能…" autocomplete="off" />
+        <button class="btn-outline" id="btnLibRefresh">刷新</button>
+        <button class="btn-primary" id="btnLibNew">+ 新增</button>
+      </div>
+      <div class="lib-filters" id="libFilters"></div>
+      <div class="lib-list" id="libList"><div class="empty-drawer">加载中…</div></div>
+
+      <!-- 新增 / 编辑表单 -->
+      <div class="lib-editor" id="libEditor" hidden>
+        <h3 id="libEditorTitle">新增板子</h3>
+        <label class="field-label">名称</label>
+        <input class="field-input" id="libName" placeholder="例如：DHT11 温湿度采集板" />
+        <label class="field-label">描述</label>
+        <textarea class="field-input" id="libDesc" rows="2" placeholder="这块板子做什么用、关键器件与参数…"></textarea>
+        <label class="field-label">分类</label>
+        <input class="field-input" id="libCategory" placeholder="电源 / LED 灯光 / 传感器 / 驱动 / 接口" />
+        <label class="field-label">标签 <span class="field-hint">（逗号分隔）</span></label>
+        <input class="field-input" id="libTags" placeholder="DHT11, 温湿度, 3.3V" />
+        <div class="lib-json-wrap" id="libJsonWrap">
+          <label class="field-label">设计 JSON <span class="field-hint">（新增时必填，可从现有设计复制）</span></label>
+          <textarea class="field-input mono" id="libJson" rows="6" placeholder='{"title":"...","components":[...],"nets":[...]}'></textarea>
+        </div>
+        <div class="model-actions">
+          <button class="btn-outline" id="btnLibCancel">取消</button>
+          <button class="btn-primary" id="btnLibSave">保存</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- v2.5 版本历史抽屉 -->
+  <aside class="drawer" id="versionDrawer" hidden>
+    <div class="drawer-head">
+      <h2>设计版本历史</h2>
+      <button class="icon-btn" data-close-drawer="versionDrawer">✕</button>
+    </div>
+    <div class="drawer-body">
+      <p class="settings-note" style="margin-top:0">同一任务内的每次改动都会存一个快照。点「恢复」回到任意版本，工程文件会同步重生成。</p>
+      <div class="version-list" id="versionList"><div class="empty-drawer">加载中…</div></div>
     </div>
   </aside>
 

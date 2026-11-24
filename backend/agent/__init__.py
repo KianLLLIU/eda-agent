@@ -14,6 +14,7 @@ from .validator import validate_design, DesignError
 from .llm import LLMClient, LLMError
 from . import nlu
 from . import assistant
+from . import dialogue
 
 __all__ = [
     "generate_design_json",
@@ -30,4 +31,5 @@ __all__ = [
     "LLMError",
     "nlu",
     "assistant",
+    "dialogue",
 ]

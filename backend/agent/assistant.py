@@ -21,8 +21,9 @@ import uuid
 
 from .. import config
 from . import nlu
+from . import dialogue
 
-VERSION = "2.4.0"
+VERSION = "2.5.0"
 
 ASSISTANT_PROFILE = {
     "name": "W",
@@ -70,16 +71,21 @@ class Conversation:
     """一次完整的设计会话"""
 
     def __init__(self, cid=None, data=None):
+        data = data or {}
         self.id = cid or uuid.uuid4().hex[:10]
-        self.created_at = (data or {}).get("created_at", time.time())
-        self.updated_at = (data or {}).get("updated_at", time.time())
-        self.title = (data or {}).get("title", "新设计会话")
-        self.turns = list((data or {}).get("turns", []))
-        self.design = (data or {}).get("design")
-        self.keywords_seen = list((data or {}).get("keywords_seen", []))
-        self.last_intent = (data or {}).get("last_intent")
-        self.project_name = (data or {}).get("project_name")
-        self.zip_path = (data or {}).get("zip_path")
+        self.created_at = data.get("created_at", time.time())
+        self.updated_at = data.get("updated_at", time.time())
+        self.title = data.get("title", "新设计会话")
+        self.turns = list(data.get("turns", []))
+        self.design = data.get("design")
+        self.keywords_seen = list(data.get("keywords_seen", []))
+        self.last_intent = data.get("last_intent")
+        self.project_name = data.get("project_name")
+        self.zip_path = data.get("zip_path")
+        # v2.5：跨轮需求档案 + 设计版本快照（同一任务内持续迭代可回退）
+        self.requirement = dialogue.RequirementProfile(data.get("requirement"))
+        self.versions = list(data.get("versions", []))[-12:]
+        self.iteration = int(data.get("iteration", 0))
 
     def add_turn(self, role, text, extra=None):
         turn = {"role": role, "text": text, "ts": time.time()}
@@ -112,6 +118,47 @@ class Conversation:
         bits.append("对话轮次：" + str(len([t for t in self.turns if t["role"] == "user"])))
         return "；".join(bits)
 
+    def remember_requirement(self, analysis, message):
+        """把一轮对话里的电路信号累积进需求档案"""
+        changed = self.requirement.absorb(analysis, message)
+        self.requirement.last_summary = self.requirement.to_summary()
+        return changed
+
+    def snapshot(self, label: str, changes=None):
+        """记录一版设计快照，供迭代对比与回退"""
+        if not self.design:
+            return None
+        self.iteration += 1
+        snap = {
+            "v": self.iteration,
+            "label": label[:40],
+            "ts": time.time(),
+            "design": self.design,
+            "project_name": self.project_name,
+            "zip_path": self.zip_path,
+            "changes": list(changes or []),
+        }
+        self.versions.append(snap)
+        self.versions = self.versions[-12:]
+        return {"v": snap["v"], "label": snap["label"], "ts": snap["ts"],
+                "components": len(self.design.get("components", [])),
+                "changes": snap["changes"]}
+
+    def rollback(self, version: int):
+        """回退到指定版本（不改变版本号序列，仅恢复设计）"""
+        for snap in self.versions:
+            if snap["v"] == version:
+                self.design = snap["design"]
+                self.project_name = snap.get("project_name")
+                self.zip_path = snap.get("zip_path")
+                self.iteration += 1
+                return {"v": version, "restored_to": version, "iteration": self.iteration}
+        raise KeyError("版本 v%d 不存在" % version)
+
+    def version_list(self):
+        return [{k: v for k, v in s.items() if k not in ("design", "zip_path")}
+                for s in self.versions]
+
     def to_dict(self):
         return {
             "id": self.id, "title": self.title,
@@ -119,6 +166,9 @@ class Conversation:
             "turns": self.turns, "design": self.design,
             "keywords_seen": self.keywords_seen, "last_intent": self.last_intent,
             "project_name": self.project_name, "zip_path": self.zip_path,
+            "requirement": self.requirement.to_dict(),
+            "versions": self.versions,
+            "iteration": self.iteration,
         }
 
     def brief(self):
@@ -128,6 +178,9 @@ class Conversation:
             "turns": len(self.turns),
             "has_design": bool(self.design),
             "design_title": (self.design or {}).get("title", ""),
+            "iteration": self.iteration,
+            "versions": len(self.versions),
+            "requirement": self.requirement.brief(),
         }
 
 

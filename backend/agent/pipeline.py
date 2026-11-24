@@ -291,7 +291,8 @@ def _find_targets(design: dict, analysis: dict, new_value: str):
     for cat in cats:
         symbols = nlu.CATEGORY_TO_SYMBOL.get(cat, [])
         picked = [c for c in comps
-                  if any("%s:%s" % (c.get("lib", ""), c.get("symbol", "")).startswith(s) for s in symbols)]
+                  if any(("%s:%s" % (c.get("lib", ""), c.get("symbol", ""))).startswith(s)
+                         for s in symbols)]
         if picked:
             return picked, "按类别「%s」" % cat
     return [], ""
@@ -341,7 +342,8 @@ def _apply_offline_revision(design: dict, instruction: str, analysis: dict):
         cat = cat or "电容"
         symbols = nlu.CATEGORY_TO_SYMBOL.get(cat, [])
         samples = [c for c in comps
-                   if any("%s:%s" % (c.get("lib", ""), c.get("symbol", "")).startswith(s) for s in symbols)]
+                   if any(("%s:%s" % (c.get("lib", ""), c.get("symbol", ""))).startswith(s)
+                          for s in symbols)]
         if samples:
             sample = samples[0]
             prefix = re.match(r"([A-Za-z]+)", sample.get("ref", "X1"))
